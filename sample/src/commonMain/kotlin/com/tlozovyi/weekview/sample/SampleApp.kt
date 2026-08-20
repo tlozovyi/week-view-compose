@@ -16,38 +16,53 @@
 
 package com.tlozovyi.weekview.sample
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tlozovyi.weekview.WeekView
-import com.tlozovyi.weekview.WeekViewEvent
-import com.tlozovyi.weekview.WeekViewEventStyle
-import com.tlozovyi.weekview.WeekViewStyle
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.atTime
 import kotlinx.datetime.todayIn
 
 @Composable
 fun SampleApp() {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
-    var firstVisibleDate by remember { mutableStateOf(today) }
+    var selectedMode by remember { mutableStateOf(SampleViewMode.ThreeDaySnapping) }
+    var firstVisibleDate by remember(selectedMode) { mutableStateOf(today) }
     var events by remember { mutableStateOf(sampleEvents(today)) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -55,299 +70,163 @@ fun SampleApp() {
     MaterialTheme {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
+            topBar = {
+                SampleModeTopBar(
+                    selectedMode = selectedMode,
+                    onModeSelected = { selectedMode = it },
+                )
+            },
             snackbarHost = { SnackbarHost(snackbarHostState) },
         ) { padding ->
             Surface(
                 modifier = Modifier
                     .fillMaxSize()
-                    .safeDrawingPadding()
                     .padding(padding),
             ) {
-                WeekView(
-                    events = events,
-                    style = WeekViewStyle(
-                        numberOfVisibleDays = 3,
-                        minHour = 7,
-                        maxHour = 22,
-                    ),
-                    firstVisibleDate = firstVisibleDate,
-                    onFirstVisibleDateChange = { firstVisibleDate = it },
-                    onEventClick = { event ->
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Selected: ${event.title}")
-                        }
-                    },
-                    onEventDrop = { event, newStartTime, newEndTime ->
-                        events = events.map { current ->
-                            if (current.id == event.id) {
-                                current.copy(startTime = newStartTime, endTime = newEndTime)
-                            } else {
-                                current
-                            }
-                        }
-                        scope.launch {
-                            snackbarHostState.showSnackbar(
-                                "Moved ${event.title} to ${newStartTime.hour}:${newStartTime.minute.toString().padStart(2, '0')}",
-                            )
-                        }
-                    },
-                )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        text = selectedMode.description,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    if (selectedMode.showsStaticNavigation) {
+                        StaticWeekNavigationBar(
+                            firstVisibleDate = firstVisibleDate,
+                            numberOfVisibleDays = selectedMode.style.numberOfVisibleDays,
+                            onPrevious = {
+                                firstVisibleDate = firstVisibleDate.plusDays(-numberOfVisibleDays(selectedMode))
+                            },
+                            onNext = {
+                                firstVisibleDate = firstVisibleDate.plusDays(numberOfVisibleDays(selectedMode))
+                            },
+                        )
+                    }
+
+                    key(selectedMode) {
+                        WeekView(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            events = events,
+                            style = selectedMode.style,
+                            firstVisibleDate = firstVisibleDate,
+                            onFirstVisibleDateChange = { updatedDate ->
+                                if (selectedMode.style.horizontalScrollingEnabled) {
+                                    firstVisibleDate = updatedDate
+                                }
+                            },
+                            onEventClick = { event ->
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Selected: ${event.title}")
+                                }
+                            },
+                            onEventDrop = { event, newStartTime, newEndTime ->
+                                events = events.map { current ->
+                                    if (current.id == event.id) {
+                                        current.copy(startTime = newStartTime, endTime = newEndTime)
+                                    } else {
+                                        current
+                                    }
+                                }
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        "Moved ${event.title} to ${newStartTime.hour}:${newStartTime.minute.toString().padStart(2, '0')}",
+                                    )
+                                }
+                            },
+                        )
+                    }
+                }
             }
         }
     }
 }
 
-private fun LocalDate.plusDays(days: Int): LocalDate =
-    LocalDate.fromEpochDays(toEpochDays() + days)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SampleModeTopBar(
+    selectedMode: SampleViewMode,
+    onModeSelected: (SampleViewMode) -> Unit,
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
 
-private fun sampleEvents(today: LocalDate): List<WeekViewEvent> {
-    val yesterday = today.plusDays(-1)
-    val tomorrow = today.plusDays(1)
-    val dayAfterTomorrow = today.plusDays(2)
-    val twoDaysAgo = today.plusDays(-2)
-
-    return listOf(
-        // Today
-        WeekViewEvent(
-            id = 1,
-            title = "Team standup",
-            startTime = today.atTime(9, 0),
-            endTime = today.atTime(9, 30),
-        ),
-        WeekViewEvent(
-            id = 2,
-            title = "Design review",
-            startTime = today.atTime(14, 0),
-            endTime = today.atTime(15, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF81C784)),
-        ),
-        WeekViewEvent(
-            id = 3,
-            title = "Overlapping A",
-            startTime = today.atTime(10, 0),
-            endTime = today.atTime(11, 30),
-        ),
-        WeekViewEvent(
-            id = 4,
-            title = "Overlapping B",
-            startTime = today.atTime(10, 30),
-            endTime = today.atTime(12, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFFFB74D)),
-        ),
-        WeekViewEvent(
-            id = 5,
-            title = "1:1",
-            startTime = today.atTime(10, 15),
-            endTime = today.atTime(11, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF9575CD)),
-        ),
-        WeekViewEvent(
-            id = 6,
-            title = "Morning workout",
-            startTime = today.atTime(7, 30),
-            endTime = today.atTime(8, 15),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF4DD0E1)),
-        ),
-        WeekViewEvent(
-            id = 7,
-            title = "Product sync",
-            subtitle = "Roadmap Q4",
-            startTime = today.atTime(11, 30),
-            endTime = today.atTime(12, 30),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF64B5F6)),
-        ),
-        WeekViewEvent(
-            id = 8,
-            title = "Lunch",
-            startTime = today.atTime(12, 30),
-            endTime = today.atTime(13, 15),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFAED581)),
-        ),
-        WeekViewEvent(
-            id = 9,
-            title = "Focus time",
-            startTime = today.atTime(13, 30),
-            endTime = today.atTime(15, 30),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF90A4AE)),
-        ),
-        WeekViewEvent(
-            id = 10,
-            title = "Code review",
-            startTime = today.atTime(15, 30),
-            endTime = today.atTime(16, 15),
-        ),
-        WeekViewEvent(
-            id = 11,
-            title = "Demo prep",
-            startTime = today.atTime(16, 0),
-            endTime = today.atTime(17, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFFF8A65)),
-        ),
-        WeekViewEvent(
-            id = 12,
-            title = "Team retro",
-            startTime = today.atTime(17, 0),
-            endTime = today.atTime(18, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFBA68C8)),
-        ),
-        WeekViewEvent(
-            id = 101,
-            title = "Sprint demo",
-            startTime = today.atTime(0, 0),
-            endTime = today.plusDays(1).atTime(0, 0),
-            isAllDay = true,
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFEF5350)),
-        ),
-        WeekViewEvent(
-            id = 102,
-            title = "Focus day",
-            startTime = today.atTime(0, 0),
-            endTime = today.plusDays(1).atTime(0, 0),
-            isAllDay = true,
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF26A69A)),
-        ),
-        WeekViewEvent(
-            id = 104,
-            title = "Company offsite",
-            startTime = today.atTime(0, 0),
-            endTime = today.plusDays(1).atTime(0, 0),
-            isAllDay = true,
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFAB47BC)),
-        ),
-        WeekViewEvent(
-            id = 105,
-            title = "Submit expenses",
-            startTime = today.atTime(0, 0),
-            endTime = today.plusDays(1).atTime(0, 0),
-            isAllDay = true,
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFFFCA28)),
-        ),
-        WeekViewEvent(
-            id = 106,
-            title = "Birthday",
-            startTime = today.atTime(0, 0),
-            endTime = today.plusDays(1).atTime(0, 0),
-            isAllDay = true,
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFEC407A)),
-        ),
-
-        // Tomorrow
-        WeekViewEvent(
-            id = 13,
-            title = "Sprint planning",
-            startTime = tomorrow.atTime(9, 0),
-            endTime = tomorrow.atTime(10, 30),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF7986CB)),
-        ),
-        WeekViewEvent(
-            id = 14,
-            title = "Client call",
-            subtitle = "Acme Corp",
-            startTime = tomorrow.atTime(11, 0),
-            endTime = tomorrow.atTime(12, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF4DB6AC)),
-        ),
-        WeekViewEvent(
-            id = 15,
-            title = "Workshop",
-            startTime = tomorrow.atTime(13, 0),
-            endTime = tomorrow.atTime(15, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF9575CD)),
-        ),
-        WeekViewEvent(
-            id = 16,
-            title = "QA handoff",
-            startTime = tomorrow.atTime(15, 0),
-            endTime = tomorrow.atTime(15, 45),
-        ),
-        WeekViewEvent(
-            id = 17,
-            title = "Release checklist",
-            startTime = tomorrow.atTime(16, 30),
-            endTime = tomorrow.atTime(17, 30),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFE57373)),
-        ),
-        WeekViewEvent(
-            id = 103,
-            title = "Conference",
-            startTime = tomorrow.atTime(0, 0),
-            endTime = dayAfterTomorrow.plusDays(1).atTime(0, 0),
-            isAllDay = true,
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF5C6BC0)),
-        ),
-
-        // Day after tomorrow
-        WeekViewEvent(
-            id = 18,
-            title = "Dentist",
-            startTime = dayAfterTomorrow.atTime(8, 0),
-            endTime = dayAfterTomorrow.atTime(9, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF4FC3F7)),
-        ),
-        WeekViewEvent(
-            id = 19,
-            title = "Architecture review",
-            startTime = dayAfterTomorrow.atTime(10, 0),
-            endTime = dayAfterTomorrow.atTime(11, 30),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF81C784)),
-        ),
-        WeekViewEvent(
-            id = 20,
-            title = "Pair programming",
-            startTime = dayAfterTomorrow.atTime(13, 0),
-            endTime = dayAfterTomorrow.atTime(14, 30),
-        ),
-        WeekViewEvent(
-            id = 21,
-            title = "Dinner with friends",
-            startTime = dayAfterTomorrow.atTime(19, 0),
-            endTime = dayAfterTomorrow.atTime(21, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFFFB74D)),
-        ),
-
-        // Yesterday
-        WeekViewEvent(
-            id = 22,
-            title = "Budget review",
-            startTime = yesterday.atTime(10, 0),
-            endTime = yesterday.atTime(11, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF90CAF9)),
-        ),
-        WeekViewEvent(
-            id = 23,
-            title = "UX critique",
-            startTime = yesterday.atTime(14, 0),
-            endTime = yesterday.atTime(15, 30),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFCE93D8)),
-        ),
-        WeekViewEvent(
-            id = 24,
-            title = "Write-up",
-            startTime = yesterday.atTime(16, 0),
-            endTime = yesterday.atTime(17, 30),
-        ),
-
-        // Two days ago
-        WeekViewEvent(
-            id = 25,
-            title = "All-hands",
-            startTime = twoDaysAgo.atTime(9, 0),
-            endTime = twoDaysAgo.atTime(10, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFF64B5F6)),
-        ),
-        WeekViewEvent(
-            id = 26,
-            title = "Interview",
-            startTime = twoDaysAgo.atTime(11, 0),
-            endTime = twoDaysAgo.atTime(12, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFA1887F)),
-        ),
-        WeekViewEvent(
-            id = 27,
-            title = "Bug bash",
-            startTime = twoDaysAgo.atTime(14, 0),
-            endTime = twoDaysAgo.atTime(16, 0),
-            style = WeekViewEventStyle(backgroundColor = Color(0xFFE57373)),
-        ),
+    TopAppBar(
+        title = {
+            Column {
+                Text("WeekView Sample")
+                Text(
+                    text = selectedMode.title,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        actions = {
+            Box {
+                TextButton(onClick = { menuExpanded = true }) {
+                    Text("Mode")
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    SampleViewMode.entries.forEach { mode ->
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+                                    Text(mode.title)
+                                    Text(
+                                        text = mode.description,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            },
+                            onClick = {
+                                onModeSelected(mode)
+                                menuExpanded = false
+                            },
+                        )
+                    }
+                }
+            }
+        },
     )
 }
+
+@Composable
+private fun StaticWeekNavigationBar(
+    firstVisibleDate: LocalDate,
+    numberOfVisibleDays: Int,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+) {
+    val lastVisibleDate = firstVisibleDate.plusDays(numberOfVisibleDays - 1)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        IconButton(onClick = onPrevious) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous week")
+        }
+        Text(
+            text = "$firstVisibleDate – $lastVisibleDate",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        IconButton(onClick = onNext) {
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next week")
+        }
+    }
+}
+
+private fun numberOfVisibleDays(mode: SampleViewMode): Int = mode.style.numberOfVisibleDays

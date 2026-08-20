@@ -203,6 +203,9 @@ internal fun Modifier.weekViewScrollGestures(
                         } else {
                             ScrollAxis.Vertical
                         }
+                        if (scrollAxis == ScrollAxis.Horizontal && !gestureScope.isScrollBlocked()) {
+                            gestureScope.onHorizontalScrollStart()
+                        }
                     }
                 }
 
@@ -210,6 +213,10 @@ internal fun Modifier.weekViewScrollGestures(
                     change.consume()
                     gestureScope.onHorizontalDrag(delta.x)
                 }
+            }
+
+            if (scrollAxis == ScrollAxis.Horizontal && !gestureScope.isScrollBlocked()) {
+                gestureScope.onHorizontalScrollEnd()
             }
         }
     }

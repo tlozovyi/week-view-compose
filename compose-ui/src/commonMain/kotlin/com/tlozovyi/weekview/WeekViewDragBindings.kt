@@ -62,16 +62,21 @@ internal fun rememberDragGhostChip(
 
 internal fun WeekViewGestureScope.bindHorizontalScrollGestures(
     dragStateProvider: () -> WeekViewDragState?,
+    isHorizontalSnappingProvider: () -> Boolean,
     dayWidthPx: Float,
     anchorDateProvider: () -> LocalDate,
     horizontalScrollOffsetProvider: () -> Float,
     onHorizontalScrollOffsetChange: (Float) -> Unit,
     onAnchorDateChange: (LocalDate) -> Unit,
     onAnchorGenerationBump: () -> Unit,
-    onFirstVisibleDateChange: ((LocalDate) -> Unit)?,
+    onHorizontalScrollSnapRequest: () -> Unit,
+    onHorizontalScrollStart: () -> Unit,
 ) {
-    isScrollBlocked = { dragStateProvider() != null }
+    isScrollBlocked = {
+        dragStateProvider() != null || isHorizontalSnappingProvider()
+    }
     isPinchBlocked = { dragStateProvider() != null }
+    this.onHorizontalScrollStart = onHorizontalScrollStart
     onHorizontalDrag = { delta ->
         onHorizontalScrollOffsetChange(
             applyHorizontalScrollDelta(
@@ -84,11 +89,11 @@ internal fun WeekViewGestureScope.bindHorizontalScrollGestures(
                         onAnchorGenerationBump()
                     }
                     onAnchorDateChange(newDate)
-                    onFirstVisibleDateChange?.invoke(newDate)
                 },
             ),
         )
     }
+    onHorizontalScrollEnd = onHorizontalScrollSnapRequest
 }
 
 internal fun WeekViewGestureScope.bindEventDragGestures(

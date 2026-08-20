@@ -301,7 +301,7 @@ class WeekViewAllDayLayoutTest {
             density = density,
         ).copy(contentGridWidthPx = baseScrollLayout.renderDates.size * baseScrollLayout.dayWidthPx)
 
-        val date = LocalDate(2026, 8, 24)
+        val date = LocalDate(2026, 8, 23)
         val chip = EventChip(
             event = ResolvedWeekViewEntity.Event<WeekViewEvent>(
                 id = 1,
@@ -328,7 +328,11 @@ class WeekViewAllDayLayoutTest {
         )
 
         assertTrue(chip.bounds.right > chip.bounds.left)
-        assertTrue(chip.bounds.left >= 500f)
+        assertEquals(
+            scrollLayout.dayStartX(scrollLayout.dateIndex(date)),
+            chip.bounds.left,
+            absoluteTolerance = 0.01f,
+        )
 
         val dayWidthPx = scrollLayout.dayWidthPx
         listOf(-150f, -50f, 0f, 50f, 150f).forEach { offsetPx ->

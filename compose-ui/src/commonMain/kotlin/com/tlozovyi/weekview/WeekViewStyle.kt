@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.datetime.DayOfWeek
 
 /**
  * Visual and behavioral configuration for [WeekView].
@@ -128,6 +129,10 @@ data class WeekViewStyle(
     val scrollToCurrentTimeOnLaunch: Boolean = true,
     /** Allows continuous horizontal scrolling when [WeekView] receives [onFirstVisibleDateChange]. */
     val horizontalScrollingEnabled: Boolean = true,
+    /** Animates to a snap target when the user lifts their finger after horizontal scrolling. */
+    val horizontalScrollSnapEnabled: Boolean = true,
+    /** First day of the week used when [numberOfVisibleDays] >= 7 for week alignment and page snap. */
+    val firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
     /** Allows long-press drag-and-drop when [WeekView] receives [onEventDrop]. */
     val dragAndDropEnabled: Boolean = true,
 ) {

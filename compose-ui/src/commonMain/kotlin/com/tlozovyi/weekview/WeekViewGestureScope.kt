@@ -27,6 +27,8 @@ import androidx.compose.ui.geometry.Offset
 internal class WeekViewGestureScope {
     var isScrollBlocked: () -> Boolean = { false }
     var onHorizontalDrag: (Float) -> Unit = {}
+    var onHorizontalScrollStart: () -> Unit = {}
+    var onHorizontalScrollEnd: () -> Unit = {}
     var isPinchBlocked: () -> Boolean = { false }
     var eventChips: List<EventChip> = emptyList()
     var horizontalTranslationPx: Float = 0f

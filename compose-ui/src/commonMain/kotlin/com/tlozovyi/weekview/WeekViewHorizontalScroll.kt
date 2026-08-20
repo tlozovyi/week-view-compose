@@ -16,15 +16,11 @@
 
 package com.tlozovyi.weekview
 
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 
-/**
- * Extra day columns rendered on each side of the viewport.
- *
- * Needs to be at least 2 so one full column sits off-screen on each edge at rest
- * (with 1 buffer day the edge column starts exactly at the viewport boundary).
- */
-internal const val HORIZONTAL_SCROLL_BUFFER_DAYS = 2
+/** Extra day columns rendered on each side of the viewport for smooth horizontal scrolling. */
+internal const val HORIZONTAL_SCROLL_BUFFER_DAYS = 1
 
 internal fun applyHorizontalScrollDelta(
     offsetPx: Float,
@@ -158,4 +154,48 @@ internal fun buildRenderDates(
             add(firstVisibleDate.plusDays(index))
         }
     }
+}
+
+internal data class ExternalFirstVisibleDateSync(
+    val pageOriginDate: LocalDate,
+    val anchorDate: LocalDate,
+    val scrollOffsetPx: Float,
+    val anchorGenerationBump: Boolean,
+)
+
+/**
+ * Applies a [firstVisibleDate] update from the caller without disturbing in-progress free scroll.
+ *
+ * When [firstVisibleDate] already matches the internal anchor (typical scroll commit), scroll
+ * offset is preserved. External navigation (date changes from the caller) still resets to the
+ * resolved page origin with zero offset.
+ */
+internal fun syncExternalFirstVisibleDate(
+    firstVisibleDate: LocalDate,
+    currentAnchorDate: LocalDate,
+    currentScrollOffsetPx: Float,
+    numberOfVisibleDays: Int,
+    firstDayOfWeek: DayOfWeek,
+): ExternalFirstVisibleDateSync {
+    val pageOriginDate = horizontalPageOriginDate(
+        firstVisibleDate = firstVisibleDate,
+        numberOfVisibleDays = numberOfVisibleDays,
+        firstDayOfWeek = firstDayOfWeek,
+    )
+    if (firstVisibleDate == currentAnchorDate) {
+        return ExternalFirstVisibleDateSync(
+            pageOriginDate = pageOriginDate,
+            anchorDate = currentAnchorDate,
+            scrollOffsetPx = currentScrollOffsetPx,
+            anchorGenerationBump = false,
+        )
+    }
+
+    val needsReset = pageOriginDate != currentAnchorDate || currentScrollOffsetPx != 0f
+    return ExternalFirstVisibleDateSync(
+        pageOriginDate = pageOriginDate,
+        anchorDate = if (needsReset) pageOriginDate else currentAnchorDate,
+        scrollOffsetPx = if (needsReset) 0f else currentScrollOffsetPx,
+        anchorGenerationBump = needsReset,
+    )
 }

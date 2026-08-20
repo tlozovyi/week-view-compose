@@ -92,8 +92,8 @@ class WeekViewHorizontalScrollTest {
 
     @Test
     fun horizontalContentTranslationAccountsForScrollBuffer() {
-        assertEquals(-200f, horizontalContentTranslationPx(scrollOffsetPx = 0f, dayWidthPx = 100f))
-        assertEquals(-150f, horizontalContentTranslationPx(scrollOffsetPx = 50f, dayWidthPx = 100f))
+        assertEquals(-100f, horizontalContentTranslationPx(scrollOffsetPx = 0f, dayWidthPx = 100f))
+        assertEquals(-50f, horizontalContentTranslationPx(scrollOffsetPx = 50f, dayWidthPx = 100f))
     }
 
     @Test
@@ -105,9 +105,9 @@ class WeekViewHorizontalScrollTest {
             scrollBufferDays = HORIZONTAL_SCROLL_BUFFER_DAYS,
         )
 
-        assertEquals(7, dates.size)
-        assertEquals(LocalDate(2026, 8, 18), dates.first())
-        assertEquals(LocalDate(2026, 8, 24), dates.last())
+        assertEquals(5, dates.size)
+        assertEquals(LocalDate(2026, 8, 19), dates.first())
+        assertEquals(LocalDate(2026, 8, 23), dates.last())
     }
 
     @Test
@@ -118,9 +118,9 @@ class WeekViewHorizontalScrollTest {
             dayWidthPx = dayWidthPx,
         )
 
-        assertEquals(0f to 100f, dayColumnScreenBounds(2, dayWidthPx, translationPx))
-        assertEquals(100f to 200f, dayColumnScreenBounds(3, dayWidthPx, translationPx))
-        assertEquals(200f to 300f, dayColumnScreenBounds(4, dayWidthPx, translationPx))
+        assertEquals(0f to 100f, dayColumnScreenBounds(1, dayWidthPx, translationPx))
+        assertEquals(100f to 200f, dayColumnScreenBounds(2, dayWidthPx, translationPx))
+        assertEquals(200f to 300f, dayColumnScreenBounds(3, dayWidthPx, translationPx))
     }
 
     @Test
@@ -214,11 +214,41 @@ class WeekViewHorizontalScrollTest {
             scrollBufferDays = HORIZONTAL_SCROLL_BUFFER_DAYS,
         )
         val today = LocalDate(2026, 8, 20)
-        assertEquals(1, layout.dateIndex(today))
-        val horizontalTranslationPx = -140f
+        assertEquals(0, layout.dateIndex(today))
+        val horizontalTranslationPx = -40f
 
         assertEquals(true, isTodayColumnVisibleOnScreen(layout, today, horizontalTranslationPx))
         assertEquals(false, layout.visibleDates.contains(today))
+    }
+
+    @Test
+    fun syncExternalFirstVisibleDatePreservesOffsetOnScrollCommit() {
+        val sync = syncExternalFirstVisibleDate(
+            firstVisibleDate = LocalDate(2026, 8, 20),
+            currentAnchorDate = LocalDate(2026, 8, 20),
+            currentScrollOffsetPx = 35f,
+            numberOfVisibleDays = 7,
+            firstDayOfWeek = kotlinx.datetime.DayOfWeek.MONDAY,
+        )
+
+        assertEquals(false, sync.anchorGenerationBump)
+        assertEquals(35f, sync.scrollOffsetPx)
+        assertEquals(LocalDate(2026, 8, 20), sync.anchorDate)
+    }
+
+    @Test
+    fun syncExternalFirstVisibleDateResetsOnExternalNavigation() {
+        val sync = syncExternalFirstVisibleDate(
+            firstVisibleDate = LocalDate(2026, 8, 24),
+            currentAnchorDate = LocalDate(2026, 8, 20),
+            currentScrollOffsetPx = 35f,
+            numberOfVisibleDays = 7,
+            firstDayOfWeek = kotlinx.datetime.DayOfWeek.MONDAY,
+        )
+
+        assertEquals(true, sync.anchorGenerationBump)
+        assertEquals(0f, sync.scrollOffsetPx)
+        assertEquals(LocalDate(2026, 8, 24), sync.anchorDate)
     }
 
     @Test

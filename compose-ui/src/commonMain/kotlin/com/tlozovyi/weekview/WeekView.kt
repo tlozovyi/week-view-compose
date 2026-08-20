@@ -94,8 +94,26 @@ fun WeekView(
     val horizontalScrollingEnabled = style.horizontalScrollingEnabled && onFirstVisibleDateChange != null
     val eventClickEnabled = onEventClick != null
     val eventDragEnabled = style.dragAndDropEnabled && onEventDrop != null
+    val horizontalScrollSnapState = rememberWeekViewHorizontalScrollSnapState()
 
-    var anchorDate by remember { mutableStateOf(firstVisibleDate) }
+    var pageOriginDate by remember {
+        mutableStateOf(
+            horizontalPageOriginDate(
+                firstVisibleDate = firstVisibleDate,
+                numberOfVisibleDays = style.numberOfVisibleDays,
+                firstDayOfWeek = style.firstDayOfWeek,
+            ),
+        )
+    }
+    var anchorDate by remember {
+        mutableStateOf(
+            horizontalPageOriginDate(
+                firstVisibleDate = firstVisibleDate,
+                numberOfVisibleDays = style.numberOfVisibleDays,
+                firstDayOfWeek = style.firstDayOfWeek,
+            ),
+        )
+    }
     var horizontalScrollOffsetPx by remember { mutableFloatStateOf(0f) }
     var allDayEventsExpanded by remember { mutableStateOf(false) }
     var anchorGeneration by remember { mutableIntStateOf(0) }
@@ -122,10 +140,18 @@ fun WeekView(
         hourHeightPx = with(density) { style.hourHeightDp.toPx() }
     }
 
-    LaunchedEffect(firstVisibleDate) {
-        if (firstVisibleDate != anchorDate) {
-            anchorDate = firstVisibleDate
-            horizontalScrollOffsetPx = 0f
+    LaunchedEffect(firstVisibleDate, style.numberOfVisibleDays, style.firstDayOfWeek) {
+        val sync = syncExternalFirstVisibleDate(
+            firstVisibleDate = firstVisibleDate,
+            currentAnchorDate = anchorDate,
+            currentScrollOffsetPx = horizontalScrollOffsetPx,
+            numberOfVisibleDays = style.numberOfVisibleDays,
+            firstDayOfWeek = style.firstDayOfWeek,
+        )
+        pageOriginDate = sync.pageOriginDate
+        if (sync.anchorGenerationBump) {
+            anchorDate = sync.anchorDate
+            horizontalScrollOffsetPx = sync.scrollOffsetPx
             anchorGeneration++
         }
     }
@@ -166,6 +192,19 @@ fun WeekView(
             scrollOffsetPx = horizontalScrollOffsetPx,
             dayWidthPx = baseLayout.dayWidthPx,
             scrollBufferDays = baseLayout.scrollBufferDays,
+        )
+
+        WeekViewHorizontalScrollSnapEffect(
+            enabled = horizontalScrollingEnabled,
+            snapState = horizontalScrollSnapState,
+            anchorDate = anchorDate,
+            scrollOffsetPx = horizontalScrollOffsetPx,
+            dayWidthPx = baseLayout.dayWidthPx,
+            style = style,
+            onAnchorDateChange = { anchorDate = it },
+            onScrollOffsetChange = { horizontalScrollOffsetPx = it },
+            onFirstVisibleDateChange = onFirstVisibleDateChange,
+            onAnchorGenerationBump = { anchorGeneration++ },
         )
 
         val eventDateRange = if (horizontalScrollingEnabled) {
@@ -367,13 +406,32 @@ fun WeekView(
         SideEffect {
             gestureScope.bindHorizontalScrollGestures(
                 dragStateProvider = { dragState },
+                isHorizontalSnappingProvider = { horizontalScrollSnapState.isSnapping },
                 dayWidthPx = derivedLayouts.layout.dayWidthPx,
                 anchorDateProvider = { anchorDate },
                 horizontalScrollOffsetProvider = { horizontalScrollOffsetPx },
                 onHorizontalScrollOffsetChange = { horizontalScrollOffsetPx = it },
                 onAnchorDateChange = { anchorDate = it },
                 onAnchorGenerationBump = { anchorGeneration++ },
-                onFirstVisibleDateChange = onFirstVisibleDateChange,
+                onHorizontalScrollSnapRequest = {
+                    if (style.horizontalScrollSnapEnabled) {
+                        horizontalScrollSnapState.requestSnap()
+                    } else {
+                        onFirstVisibleDateChange?.invoke(anchorDate)
+                    }
+                },
+                onHorizontalScrollStart = {
+                    horizontalScrollSnapState.beginGesture(
+                        currentPageStartDate(
+                            pageOriginDate = pageOriginDate,
+                            anchorDate = anchorDate,
+                            scrollOffsetPx = horizontalScrollOffsetPx,
+                            dayWidthPx = derivedLayouts.layout.dayWidthPx,
+                            numberOfVisibleDays = style.numberOfVisibleDays,
+                            firstDayOfWeek = style.firstDayOfWeek,
+                        ),
+                    )
+                },
             )
         }
 

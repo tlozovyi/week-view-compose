@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.8.0-beta
+
+Horizontal scroll snapping aligned with the View library, with free-scroll mode and sample presets.
+
+### Added
+
+- Snap to nearest [numberOfVisibleDays] page when horizontal scrolling ends
+- Snap to adjacent calendar week when `numberOfVisibleDays >= 7` (aligned to `firstDayOfWeek`)
+- Animated spring snap after the finger lifts (controlled by `horizontalScrollSnapEnabled`)
+- `horizontalScrollSnapEnabled` and `firstDayOfWeek` on `WeekViewStyle`
+- Week-aligned initial `firstVisibleDate` when `numberOfVisibleDays >= 7`
+- Sample app mode switcher (3-day snap, 7-day snap, 7-day free scroll, static week, and more)
+- Unit tests for page snap targets, scroll normalization, and external date sync
+
+### Changed
+
+- Snap runs only on finger release, using an Android-style threshold (lower than half-page rounding)
+- Horizontal scroll buffer reduced to 1 off-screen day column on each side
+- `onFirstVisibleDateChange` is not called during drag; only after snap completes or on release in free-scroll mode
+
+### Fixed
+
+- Snap animation no longer jumps through buffer dates (viewport-based target resolution)
+- Small scrolls from a page start no longer over-jump to the previous page
+- Free scroll (`horizontalScrollSnapEnabled = false`) no longer snaps back on release
+- Scrolling into the future is no longer blocked by viewport/buffer edge cases
+
 ## 0.7.0-alpha
 
 Drag-and-drop event editing on the day grid.
