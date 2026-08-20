@@ -25,6 +25,10 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(compose.ui)
+        }
     }
 }
 

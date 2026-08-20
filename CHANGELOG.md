@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.2.0-alpha
+
+Basic calendar grid rendering.
+
+### Added
+
+- Date header row with configurable `DateFormatter`
+- Time column with configurable `TimeFormatter` (default 12-hour labels)
+- Day grid with past/future/today background colors
+- Hour and day separators
+- Current-time line and dot on today
+- Vertical scrolling through the hour range
+- Expanded `WeekViewStyle` (colors, separator toggles, dimensions)
+- `firstVisibleDate` parameter on `WeekView`
+- Unit tests for formatters and layout calculation
+
+### Not yet implemented
+
+- Event chip rendering
+- Horizontal scrolling / paging between date ranges
+- Gestures, drag-and-drop
+- Accessibility
+
 ## 0.1.0-alpha
 
 Initial bootstrap release.
@@ -15,10 +38,3 @@ Initial bootstrap release.
 - Skeleton `@Composable WeekView` placeholder
 - Shared unit tests for period, date extensions, and event splitting
 - Android and iOS sample app entry points
-
-### Not yet implemented
-
-- Calendar grid, time column, and event chip rendering
-- Scrolling, gestures, drag-and-drop
-- Paging adapter equivalent
-- Accessibility

@@ -33,7 +33,11 @@ fun SampleApp() {
         Surface(modifier = Modifier.fillMaxSize()) {
             WeekView(
                 events = sampleEvents(),
-                style = WeekViewStyle(numberOfVisibleDays = 3),
+                style = WeekViewStyle(
+                    numberOfVisibleDays = 3,
+                    minHour = 7,
+                    maxHour = 22,
+                ),
             )
         }
     }

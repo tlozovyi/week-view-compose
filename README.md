@@ -2,7 +2,7 @@
 
 Compose Multiplatform calendar week view for Android and iOS.
 
-**Status:** `0.1.0-alpha` — early bootstrap release with ported layout algorithms and a skeleton UI.
+**Status:** `0.2.0-alpha` — date header, time column, and scrollable day grid.
 
 ## Acknowledgements
 
@@ -48,11 +48,11 @@ WeekView(
         WeekViewEvent(
             id = 1,
             title = "Meeting",
-            startTime = LocalDateTime(2026, 8, 20, 9, 0),
-            endTime = LocalDateTime(2026, 8, 20, 10, 0),
+            startTime = LocalDate(2026, 8, 20).atTime(9, 0),
+            endTime = LocalDate(2026, 8, 20).atTime(10, 0),
         ),
     ),
-    style = WeekViewStyle(numberOfVisibleDays = 3),
+    style = WeekViewStyle(numberOfVisibleDays = 3, minHour = 7, maxHour = 22),
 )
 ```
 
