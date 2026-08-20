@@ -1,0 +1,5 @@
+jdk:
+  - openjdk17
+
+install:
+  - ./gradlew :common:publishAndroidReleasePublicationToMavenLocal :common:publishKotlinMultiplatformPublicationToMavenLocal :compose-ui:publishAndroidReleasePublicationToMavenLocal :compose-ui:publishKotlinMultiplatformPublicationToMavenLocal -x test --stacktrace

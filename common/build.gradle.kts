@@ -1,15 +1,20 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
+    id("maven-publish")
 }
 
 kotlin {
     jvmToolchain(17)
 
-    androidTarget()
+    androidTarget {
+        publishLibraryVariants("release")
+    }
 
-    iosArm64()
-    iosSimulatorArm64()
+    if (System.getProperty("os.name").contains("Mac", ignoreCase = true)) {
+        iosArm64()
+        iosSimulatorArm64()
+    }
 
     sourceSets {
         commonMain.dependencies {
@@ -30,5 +35,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
     }
 }

@@ -40,7 +40,7 @@ internal fun LocalDate.differenceWithFirstDayOfWeek(firstDayOfWeek: DayOfWeek): 
     return if (firstDayOfWeek == DayOfWeek.MONDAY && dayOfWeek == DayOfWeek.SUNDAY) {
         6
     } else {
-        dayOfWeek.value - firstDayOfWeek.value
+        dayOfWeek.ordinal - firstDayOfWeek.ordinal
     }
 }
 
