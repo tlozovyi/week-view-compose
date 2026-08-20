@@ -27,13 +27,22 @@ internal data class WeekViewLayout(
     val headerHeightPx: Float,
     val hourHeightPx: Float,
     val dayWidthPx: Float,
-    val gridWidthPx: Float,
+    val viewportGridWidthPx: Float,
+    val contentGridWidthPx: Float,
     val gridHeightPx: Float,
     val visibleDates: List<LocalDate>,
+    val renderDates: List<LocalDate>,
+    val scrollBufferDays: Int,
 ) {
+    /** @deprecated Use [viewportGridWidthPx] for the clipped viewport width. */
+    val gridWidthPx: Float
+        get() = viewportGridWidthPx
+
     fun dayStartX(dayIndex: Int): Float = dayIndex * dayWidthPx
 
     fun hourY(hour: Int, minHour: Int): Float = (hour - minHour) * hourHeightPx
+
+    fun dateIndex(date: LocalDate): Int = renderDates.indexOf(date)
 }
 
 internal fun calculateWeekViewLayout(
@@ -42,18 +51,26 @@ internal fun calculateWeekViewLayout(
     style: WeekViewStyle,
     firstVisibleDate: LocalDate,
     density: Density,
+    horizontalScrollingEnabled: Boolean = false,
 ): WeekViewLayout {
     val timeColumnWidthPx = with(density) { style.timeColumnWidthDp.toPx() }
     val headerHeightPx = with(density) { style.headerHeightDp.toPx() }
     val hourHeightPx = with(density) { style.hourHeightDp.toPx() }
-    val gridWidthPx = (viewportWidthPx - timeColumnWidthPx).coerceAtLeast(0f)
-    val dayWidthPx = gridWidthPx / style.numberOfVisibleDays
+    val viewportGridWidthPx = (viewportWidthPx - timeColumnWidthPx).coerceAtLeast(0f)
+    val dayWidthPx = viewportGridWidthPx / style.numberOfVisibleDays
     val gridHeightPx = style.hoursCount * hourHeightPx
+    val scrollBufferDays = if (horizontalScrollingEnabled) HORIZONTAL_SCROLL_BUFFER_DAYS else 0
     val visibleDates = buildList {
         for (index in 0 until style.numberOfVisibleDays) {
             add(firstVisibleDate.plusDays(index))
         }
     }
+    val renderDates = buildRenderDates(
+        firstVisibleDate = firstVisibleDate,
+        numberOfVisibleDays = style.numberOfVisibleDays,
+        scrollBufferDays = scrollBufferDays,
+    )
+    val contentGridWidthPx = renderDates.size * dayWidthPx
 
     return WeekViewLayout(
         viewportWidthPx = viewportWidthPx,
@@ -62,14 +79,13 @@ internal fun calculateWeekViewLayout(
         headerHeightPx = headerHeightPx,
         hourHeightPx = hourHeightPx,
         dayWidthPx = dayWidthPx,
-        gridWidthPx = gridWidthPx,
+        viewportGridWidthPx = viewportGridWidthPx,
+        contentGridWidthPx = contentGridWidthPx,
         gridHeightPx = gridHeightPx,
         visibleDates = visibleDates,
+        renderDates = renderDates,
+        scrollBufferDays = scrollBufferDays,
     )
-}
-
-private fun LocalDate.plusDays(days: Int): LocalDate {
-    return LocalDate.fromEpochDays(toEpochDays() + days)
 }
 
 internal fun Dp.toPx(density: Density): Float = with(density) { toPx() }

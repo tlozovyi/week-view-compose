@@ -2,7 +2,7 @@
 
 Compose Multiplatform calendar week view for Android and iOS.
 
-**Status:** `0.3.0-alpha` — date header, time column, scrollable day grid, and event chips.
+**Status:** `0.4.0-alpha` — calendar grid, event chips, tap handling, and continuous horizontal scroll.
 
 ## Acknowledgements
 
@@ -59,6 +59,8 @@ WeekView(
         ),
     ),
     style = WeekViewStyle(numberOfVisibleDays = 3, minHour = 7, maxHour = 22),
+    onFirstVisibleDateChange = { firstVisibleDate = it },
+    onEventClick = { event -> /* handle tap */ },
 )
 ```
 

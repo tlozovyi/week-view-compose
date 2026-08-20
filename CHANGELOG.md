@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.0-alpha
+
+Basic gesture and interaction support.
+
+### Added
+
+- `onEventClick` callback with hit-testing on event chips
+- Continuous horizontal scrolling from anywhere on `WeekView` (header or grid)
+- Swipe axis detection so vertical scrolling still works on the grid
+- `horizontalScrollingEnabled` on `WeekViewStyle` (replaces discrete header paging)
+- Unit tests for event hit-testing, horizontal scroll offset, and date rolling
+
+### Not yet implemented
+
+- Pinch-to-zoom hour height
+- Drag-and-drop event editing
+- All-day events in the header row
+- Accessibility
+
 ## 0.3.0-alpha
 
 Event chip rendering on the day grid.

@@ -49,7 +49,7 @@ private fun DrawScope.drawDayBackgrounds(
     style: WeekViewStyle,
     today: LocalDate,
 ) {
-    layout.visibleDates.forEachIndexed { index, date ->
+    layout.renderDates.forEachIndexed { index, date ->
         val left = layout.dayStartX(index)
         val top = 0f
         val size = Size(layout.dayWidthPx, layout.gridHeightPx)
@@ -97,7 +97,7 @@ private fun DrawScope.drawHourSeparators(
         drawLine(
             color = style.hourSeparatorColor,
             start = Offset(0f, y),
-            end = Offset(layout.gridWidthPx, y),
+            end = Offset(layout.contentGridWidthPx, y),
             strokeWidth = stroke,
         )
     }
@@ -108,7 +108,7 @@ private fun DrawScope.drawDaySeparators(
     style: WeekViewStyle,
 ) {
     val stroke = style.daySeparatorWidthDp.toPx()
-    for (index in 0..layout.visibleDates.size) {
+    for (index in 0..layout.renderDates.size) {
         val x = layout.dayStartX(index)
         drawLine(
             color = style.daySeparatorColor,
@@ -124,7 +124,7 @@ private fun DrawScope.drawNowLine(
     style: WeekViewStyle,
     today: LocalDate,
 ) {
-    val todayIndex = layout.visibleDates.indexOf(today)
+    val todayIndex = layout.dateIndex(today)
     if (todayIndex < 0) {
         return
     }

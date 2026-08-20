@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,8 +31,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
 import kotlinx.datetime.Clock
@@ -52,44 +60,80 @@ fun WeekView(
     modifier: Modifier = Modifier,
     style: WeekViewStyle = WeekViewStyle.Default,
     firstVisibleDate: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
+    onFirstVisibleDateChange: ((LocalDate) -> Unit)? = null,
+    onEventClick: ((WeekViewEvent) -> Unit)? = null,
     dateFormatter: DateFormatter = { year, month, day, dayOfWeek ->
         defaultDateFormatter(year, month, day, dayOfWeek, style.numberOfVisibleDays)
     },
     timeFormatter: TimeFormatter = ::defaultTimeFormatter,
 ) {
     val density = LocalDensity.current
-    val textMeasurer = rememberTextMeasurer()
+    val headerTextMeasurer = rememberTextMeasurer(cacheSize = 16)
+    val eventTextMeasurer = rememberTextMeasurer(cacheSize = 64)
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
     val verticalScrollState = rememberScrollState()
     val layoutEngine = remember { WeekViewLayoutEngine() }
+    val horizontalScrollingEnabled = style.horizontalScrollingEnabled && onFirstVisibleDateChange != null
+    val eventClickEnabled = onEventClick != null
+    var anchorDate by remember { mutableStateOf(firstVisibleDate) }
+    var horizontalScrollOffsetPx by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(firstVisibleDate) {
+        if (firstVisibleDate != anchorDate) {
+            anchorDate = firstVisibleDate
+            horizontalScrollOffsetPx = 0f
+        }
+    }
 
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(style.backgroundColor),
     ) {
-        val layout = remember(maxWidth, maxHeight, style, firstVisibleDate, density) {
+        val layout = remember(maxWidth, maxHeight, style, anchorDate, density, horizontalScrollingEnabled) {
             calculateWeekViewLayout(
                 viewportWidthPx = with(density) { maxWidth.toPx() },
                 viewportHeightPx = with(density) { maxHeight.toPx() },
                 style = style,
-                firstVisibleDate = firstVisibleDate,
+                firstVisibleDate = anchorDate,
                 density = density,
+                horizontalScrollingEnabled = horizontalScrollingEnabled,
             )
         }
+
+        val horizontalTranslationPx = horizontalContentTranslationPx(
+            scrollOffsetPx = horizontalScrollOffsetPx,
+            dayWidthPx = layout.dayWidthPx,
+            scrollBufferDays = layout.scrollBufferDays,
+        )
+
+        val eventDateRange = if (horizontalScrollingEnabled) layout.renderDates else layout.visibleDates
 
         val layoutConfig = remember(style) {
             WeekViewLayoutConfig.of(minHour = style.minHour, maxHour = style.maxHour)
         }
 
-        val eventChips = remember(events, layout, style, layoutConfig, density) {
-            val resolvedEvents = events.toResolvedEntities(style, density, layout.visibleDates)
+        val eventChips = remember(events, eventDateRange, style, layoutConfig, density) {
+            val resolvedEvents = events.toResolvedEntities(style, density, eventDateRange)
             layoutEngine.createEventChips(resolvedEvents, layoutConfig)
                 .filter { !it.event.isAllDay }
         }
 
         val chipsByDate = remember(eventChips) {
             eventChips.groupBy { it.startTime.date }
+        }
+
+        val gridLayout = remember(layout) {
+            layout.copy(contentGridWidthPx = layout.renderDates.size * layout.dayWidthPx)
+        }
+
+        SideEffect {
+            prepareEventChipBounds(
+                layout = gridLayout,
+                style = style,
+                density = density,
+                chipsByDate = chipsByDate,
+            )
         }
 
         LaunchedEffect(layout, style, today) {
@@ -108,11 +152,31 @@ fun WeekView(
             verticalScrollState.scrollTo(target)
         }
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .weekViewScrollGestures(
+                    enabled = horizontalScrollingEnabled,
+                    onHorizontalDrag = { delta ->
+                        horizontalScrollOffsetPx = applyHorizontalScrollDelta(
+                            offsetPx = horizontalScrollOffsetPx,
+                            deltaPx = delta,
+                            dayWidthPx = layout.dayWidthPx,
+                            firstVisibleDate = anchorDate,
+                            onFirstVisibleDateChange = { newDate ->
+                                anchorDate = newDate
+                                onFirstVisibleDateChange?.invoke(newDate)
+                            },
+                        )
+                    },
+                ),
+        ) {
             WeekViewHeader(
                 layout = layout,
                 style = style,
                 dateFormatter = dateFormatter,
+                horizontalTranslationPx = horizontalTranslationPx,
+                textMeasurer = headerTextMeasurer,
             )
 
             Box(
@@ -123,6 +187,7 @@ fun WeekView(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .fillMaxHeight()
                         .verticalScroll(verticalScrollState),
                 ) {
                     WeekViewTimeColumn(
@@ -130,45 +195,49 @@ fun WeekView(
                         timeFormatter = timeFormatter,
                     )
 
-                    Canvas(
+                    Box(
                         modifier = Modifier
-                            .width(with(density) { layout.gridWidthPx.toDp() })
-                            .height(with(density) { layout.gridHeightPx.toDp() }),
+                            .width(with(density) { layout.viewportGridWidthPx.toDp() })
+                            .fillMaxHeight()
+                            .clipToBounds(),
                     ) {
-                        val gridLayout = layout.copy(
-                            gridWidthPx = size.width,
-                            dayWidthPx = size.width / style.numberOfVisibleDays,
-                        )
-                        drawWeekViewGrid(
-                            layout = gridLayout,
-                            style = style,
-                            today = today,
-                        )
+                        Canvas(
+                            modifier = Modifier
+                                .width(with(density) { gridLayout.contentGridWidthPx.toDp() })
+                                .height(with(density) { gridLayout.gridHeightPx.toDp() })
+                                .weekViewEventClick(
+                                    enabled = eventClickEnabled,
+                                    eventChips = eventChips,
+                                    horizontalTranslationPx = horizontalTranslationPx,
+                                    onEventClick = onEventClick ?: {},
+                                ),
+                        ) {
+                            translate(left = horizontalTranslationPx) {
+                                drawWeekViewGrid(
+                                    layout = gridLayout,
+                                    style = style,
+                                    today = today,
+                                )
 
-                        layout.visibleDates.forEachIndexed { dateIndex, date ->
-                            val chipsForDate = chipsByDate[date].orEmpty()
-                            chipsForDate.calculateBoundsForDate(
-                                dateIndex = dateIndex,
-                                layout = gridLayout,
-                                style = style,
-                                density = density,
-                            )
-                            drawWeekViewEventChips(
-                                eventChips = chipsForDate,
-                                layout = gridLayout,
-                                style = style,
-                                density = density,
-                                textMeasurer = textMeasurer,
-                            )
-                        }
+                                gridLayout.renderDates.forEach { date ->
+                                    drawWeekViewEventChips(
+                                        eventChips = chipsByDate[date].orEmpty(),
+                                        layout = gridLayout,
+                                        style = style,
+                                        density = density,
+                                        textMeasurer = eventTextMeasurer,
+                                    )
+                                }
 
-                        if (style.showTimeColumnSeparator) {
-                            drawLine(
-                                color = style.timeColumnSeparatorColor,
-                                start = androidx.compose.ui.geometry.Offset(0f, 0f),
-                                end = androidx.compose.ui.geometry.Offset(0f, size.height),
-                                strokeWidth = style.daySeparatorWidthDp.toPx(),
-                            )
+                                if (style.showTimeColumnSeparator) {
+                                    drawLine(
+                                        color = style.timeColumnSeparatorColor,
+                                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                                        end = androidx.compose.ui.geometry.Offset(0f, size.height),
+                                        strokeWidth = style.daySeparatorWidthDp.toPx(),
+                                    )
+                                }
+                            }
                         }
                     }
                 }

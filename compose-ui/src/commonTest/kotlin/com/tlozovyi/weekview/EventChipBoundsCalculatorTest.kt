@@ -33,6 +33,7 @@ class EventChipBoundsCalculatorTest {
         overlappingEventGapDp = Dp(0f),
     )
 
+    private val visibleDate = LocalDate(2026, 8, 20)
     private val layout = WeekViewLayout(
         viewportWidthPx = 400f,
         viewportHeightPx = 600f,
@@ -40,9 +41,12 @@ class EventChipBoundsCalculatorTest {
         headerHeightPx = 40f,
         hourHeightPx = 60f,
         dayWidthPx = 344f,
-        gridWidthPx = 344f,
+        viewportGridWidthPx = 344f,
+        contentGridWidthPx = 344f,
         gridHeightPx = 1440f,
-        visibleDates = listOf(LocalDate(2026, 8, 20)),
+        visibleDates = listOf(visibleDate),
+        renderDates = listOf(visibleDate),
+        scrollBufferDays = 0,
     )
 
     private val density = FakeDensity(density = 1f)
@@ -78,6 +82,47 @@ class EventChipBoundsCalculatorTest {
         assertTrue(bounds.bottom == 600f, "Expected bottom at 10 AM but was ${bounds.bottom}")
         assertTrue(bounds.left == 0f)
         assertTrue(bounds.right == 344f)
+    }
+
+    @Test
+    fun bufferColumnBoundsAreAcceptedInWideContentGrid() {
+        val scrollLayout = layout.copy(
+            dayWidthPx = 100f,
+            viewportGridWidthPx = 300f,
+            contentGridWidthPx = 700f,
+            scrollBufferDays = 2,
+        )
+        val date = LocalDate(2026, 8, 24)
+        val event = ResolvedWeekViewEntity.Event<WeekViewEvent>(
+            id = 2,
+            title = "Buffered",
+            startTime = date.atTime(10, 0),
+            endTime = date.atTime(11, 0),
+            subtitle = null,
+            isAllDay = false,
+            style = ResolvedWeekViewEntity.Style(),
+            data = null,
+        )
+        val chip = EventChip(
+            event = event,
+            index = 0,
+            startTime = event.startTime,
+            endTime = event.endTime,
+        ).apply {
+            relativeStart = 0f
+            relativeWidth = 1f
+            minutesFromStartHour = 10 * 60
+        }
+
+        listOf(chip).calculateBoundsForDate(
+            dateIndex = 5,
+            layout = scrollLayout,
+            style = style.copy(numberOfVisibleDays = 3),
+            density = density,
+        )
+
+        assertTrue(chip.bounds.right > chip.bounds.left)
+        assertTrue(chip.bounds.left >= 500f)
     }
 
     @Test

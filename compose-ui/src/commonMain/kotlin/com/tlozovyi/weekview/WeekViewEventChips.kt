@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
@@ -36,8 +37,8 @@ internal fun DrawScope.drawWeekViewEventChips(
     density: Density,
     textMeasurer: TextMeasurer,
 ) {
-    val paddingHorizontalPx = style.eventPaddingHorizontalDp.toPx()
-    val paddingVerticalPx = style.eventPaddingVerticalDp.toPx()
+    val paddingHorizontalPx = style.eventPaddingHorizontalDp.toPx(density)
+    val paddingVerticalPx = style.eventPaddingVerticalDp.toPx(density)
     val defaultCornerRadiusPx = style.eventCornerRadiusDp.toPx()
     val textStyle = TextStyle(
         color = style.defaultEventTextColor,
@@ -91,7 +92,7 @@ internal fun DrawScope.drawWeekViewEventChips(
             text = entity.title,
             style = chipTextStyle,
             maxLines = 2,
-            constraints = androidx.compose.ui.unit.Constraints(
+            constraints = Constraints(
                 maxWidth = availableWidth.coerceAtLeast(0),
                 maxHeight = availableHeight.coerceAtLeast(0),
             ),

@@ -105,7 +105,7 @@ internal fun List<EventChip>.calculateBoundsForDate(
 
     for (eventChip in this) {
         val bounds = calculator.calculateSingleEvent(eventChip, modifiedDayStartX)
-        if (bounds.isValid(layout.gridWidthPx, layout.gridHeightPx)) {
+        if (bounds.isValid(layout.contentGridWidthPx, layout.gridHeightPx)) {
             eventChip.bounds = bounds
         } else {
             eventChip.bounds.setEmpty()

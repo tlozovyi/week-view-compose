@@ -66,6 +66,7 @@ data class WeekViewStyle(
     val eventMarginVerticalDp: Dp = 2.dp,
     val singleDayHorizontalPaddingDp: Dp = 0.dp,
     val scrollToCurrentTimeOnLaunch: Boolean = true,
+    val horizontalScrollingEnabled: Boolean = true,
 ) {
     init {
         require(numberOfVisibleDays >= 1) { "numberOfVisibleDays must be at least 1" }
