@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.0-beta3
+
+### Changed
+
+- Migrate `kotlinx.datetime.Clock` / `Instant` usage to **`kotlin.time.Clock`** for **kotlinx-datetime 0.7.x** compatibility (fixes `NoClassDefFoundError: kotlinx/datetime/Clock$System` on Android apps using datetime 0.7.1).
+
+### Dependencies
+
+- `kotlinx-datetime` **0.7.1** (was 0.6.1).
+
 ## 0.8.0-beta
 
 Horizontal scroll snapping aligned with the View library, with free-scroll mode and sample presets.
