@@ -19,6 +19,7 @@
 package com.tlozovyi.weekview
 
 import androidx.compose.ui.unit.Density
+import kotlinx.datetime.LocalDateTime
 
 /**
  * Computes pixel bounds for [EventChip] instances within the day grid.
@@ -73,6 +74,25 @@ internal class EventChipBoundsCalculator(
         }
 
         return ChipBounds(left = left, top = top, right = right, bottom = bottom)
+    }
+
+    fun calculateDraggedEvent(
+        dayStartX: Float,
+        startTime: LocalDateTime,
+        durationInMinutes: Int,
+        layoutConfig: WeekViewLayoutConfig,
+    ): ChipBounds {
+        val minutesFromStart = layoutConfig.minutesFromStart(startTime)
+        val top = calculateDistanceFromTop(minutesFromStart)
+        var bottom = calculateDistanceFromTop(minutesFromStart + durationInMinutes)
+        bottom -= eventMarginVerticalPx
+
+        return ChipBounds(
+            left = dayStartX,
+            top = top,
+            right = dayStartX + drawableDayWidth,
+            bottom = bottom,
+        )
     }
 
     fun calculateAllDayEvent(

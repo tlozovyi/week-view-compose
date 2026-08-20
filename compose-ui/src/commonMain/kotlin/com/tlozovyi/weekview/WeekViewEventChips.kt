@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextMeasurer
@@ -36,6 +37,8 @@ internal fun DrawScope.drawWeekViewEventChips(
     style: WeekViewStyle,
     density: Density,
     textMeasurer: TextMeasurer,
+    draggingEventId: Long? = null,
+    ghostChip: EventChip? = null,
 ) {
     val paddingHorizontalPx = style.eventPaddingHorizontalDp.toPx(density)
     val paddingVerticalPx = style.eventPaddingVerticalDp.toPx(density)
@@ -49,16 +52,62 @@ internal fun DrawScope.drawWeekViewEventChips(
         if (eventChip.isHidden || eventChip.bounds.isEmpty()) {
             continue
         }
+        if (eventChip.eventId == draggingEventId) {
+            continue
+        }
 
+        drawEventChip(
+            eventChip = eventChip,
+            style = style,
+            density = density,
+            textMeasurer = textMeasurer,
+            paddingHorizontalPx = paddingHorizontalPx,
+            paddingVerticalPx = paddingVerticalPx,
+            defaultCornerRadiusPx = defaultCornerRadiusPx,
+            textStyle = textStyle,
+        )
+    }
+
+    if (ghostChip != null && !ghostChip.bounds.isEmpty()) {
+        drawEventChip(
+            eventChip = ghostChip,
+            style = style,
+            density = density,
+            textMeasurer = textMeasurer,
+            paddingHorizontalPx = paddingHorizontalPx,
+            paddingVerticalPx = paddingVerticalPx,
+            defaultCornerRadiusPx = defaultCornerRadiusPx,
+            textStyle = textStyle,
+            isDragging = true,
+        )
+    }
+}
+
+private fun DrawScope.drawEventChip(
+    eventChip: EventChip,
+    style: WeekViewStyle,
+    density: Density,
+    textMeasurer: TextMeasurer,
+    paddingHorizontalPx: Float,
+    paddingVerticalPx: Float,
+    defaultCornerRadiusPx: Float,
+    textStyle: TextStyle,
+    isDragging: Boolean = false,
+) {
         val entity = eventChip.event
         val bounds = eventChip.bounds
         val rect = Rect(bounds.left, bounds.top, bounds.right, bounds.bottom)
         val cornerRadiusPx = (entity.style.cornerRadius?.toFloat() ?: defaultCornerRadiusPx)
-        val backgroundColor = entity.style.backgroundColor?.toComposeColor()
-            ?: style.defaultEventBackgroundColor
+        val backgroundColor = if (isDragging) {
+            Color(0xFF757575)
+        } else {
+            entity.style.backgroundColor?.toComposeColor()
+                ?: style.defaultEventBackgroundColor
+        }
+        val chipAlpha = if (isDragging) 0.85f else 1f
 
         drawRoundRect(
-            color = backgroundColor,
+            color = backgroundColor.copy(alpha = chipAlpha),
             topLeft = Offset(rect.left, rect.top),
             size = Size(rect.width, rect.height),
             cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
@@ -82,7 +131,7 @@ internal fun DrawScope.drawWeekViewEventChips(
         val availableWidth = bounds.width().roundToInt() - paddingHorizontalPx.roundToInt()
         val availableHeight = bounds.height().roundToInt() - (paddingVerticalPx * 2).roundToInt()
         if (availableWidth <= 0 || availableHeight <= 0) {
-            continue
+            return
         }
 
         val chipTextStyle = entity.style.textColor?.toComposeColor()?.let { textStyle.copy(color = it) }
@@ -105,7 +154,6 @@ internal fun DrawScope.drawWeekViewEventChips(
                 y = bounds.top + paddingVerticalPx,
             ),
         )
-    }
 }
 
 private fun ChipBounds.isEmpty(): Boolean {

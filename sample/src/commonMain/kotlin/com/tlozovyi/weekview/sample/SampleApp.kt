@@ -48,6 +48,7 @@ import kotlinx.datetime.todayIn
 fun SampleApp() {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
     var firstVisibleDate by remember { mutableStateOf(today) }
+    var events by remember { mutableStateOf(sampleEvents(today)) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -63,7 +64,7 @@ fun SampleApp() {
                     .padding(padding),
             ) {
                 WeekView(
-                    events = sampleEvents(today),
+                    events = events,
                     style = WeekViewStyle(
                         numberOfVisibleDays = 3,
                         minHour = 7,
@@ -74,6 +75,20 @@ fun SampleApp() {
                     onEventClick = { event ->
                         scope.launch {
                             snackbarHostState.showSnackbar("Selected: ${event.title}")
+                        }
+                    },
+                    onEventDrop = { event, newStartTime, newEndTime ->
+                        events = events.map { current ->
+                            if (current.id == event.id) {
+                                current.copy(startTime = newStartTime, endTime = newEndTime)
+                            } else {
+                                current
+                            }
+                        }
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                "Moved ${event.title} to ${newStartTime.hour}:${newStartTime.minute.toString().padStart(2, '0')}",
+                            )
                         }
                     },
                 )

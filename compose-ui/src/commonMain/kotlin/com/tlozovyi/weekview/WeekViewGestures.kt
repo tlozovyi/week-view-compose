@@ -18,6 +18,7 @@ package com.tlozovyi.weekview
 
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -56,6 +57,7 @@ internal fun Modifier.weekViewGridScroll(
 
 internal fun Modifier.weekViewPinchZoom(
     enabled: Boolean,
+    gestureScope: WeekViewGestureScope,
     zoomConfig: () -> WeekViewPinchZoomConfig,
     hourHeightPx: () -> Float,
     onPinchStart: (focalYInViewportPx: Float) -> Unit,
@@ -66,7 +68,7 @@ internal fun Modifier.weekViewPinchZoom(
         return this
     }
 
-    return pointerInput(enabled) {
+    return pointerInput(gestureScope) {
         awaitEachGesture {
             awaitFirstDown(requireUnconsumed = false)
 
@@ -75,7 +77,7 @@ internal fun Modifier.weekViewPinchZoom(
                 event = awaitPointerEvent(PointerEventPass.Initial)
             } while (event.pressedPointerCount() < 2 && event.changes.any { it.pressed })
 
-            if (event.pressedPointerCount() < 2) {
+            if (event.pressedPointerCount() < 2 || gestureScope.isPinchBlocked()) {
                 return@awaitEachGesture
             }
 
@@ -163,13 +165,13 @@ private fun distanceBetween(first: PointerInputChange, second: PointerInputChang
 
 internal fun Modifier.weekViewScrollGestures(
     enabled: Boolean,
-    onHorizontalDrag: (Float) -> Unit,
+    gestureScope: WeekViewGestureScope,
 ): Modifier {
     if (!enabled) {
         return this
     }
 
-    return pointerInput(Unit) {
+    return pointerInput(gestureScope) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
             val pointerId = down.id
@@ -204,9 +206,9 @@ internal fun Modifier.weekViewScrollGestures(
                     }
                 }
 
-                if (scrollAxis == ScrollAxis.Horizontal) {
+                if (scrollAxis == ScrollAxis.Horizontal && !gestureScope.isScrollBlocked()) {
                     change.consume()
-                    onHorizontalDrag(delta.x)
+                    gestureScope.onHorizontalDrag(delta.x)
                 }
             }
         }
@@ -260,18 +262,55 @@ internal fun Modifier.weekViewEventClick(
     horizontalTranslationPx: Float,
     onEventClick: (WeekViewEvent) -> Unit,
 ): Modifier {
-    if (!enabled) {
+    return weekViewTimedEventGestures(
+        clickEnabled = enabled,
+        dragEnabled = false,
+        gestureScope = WeekViewGestureScope().apply {
+            this.eventChips = eventChips
+            this.horizontalTranslationPx = horizontalTranslationPx
+            this.onEventClick = onEventClick
+        },
+    )
+}
+
+internal fun Modifier.weekViewTimedEventGestures(
+    clickEnabled: Boolean,
+    dragEnabled: Boolean,
+    gestureScope: WeekViewGestureScope,
+): Modifier {
+    if (!clickEnabled && !dragEnabled) {
         return this
     }
 
-    return pointerInput(eventChips, horizontalTranslationPx) {
-        detectTapGestures { offset ->
-            val event = eventChips.findEventAt(
-                x = offset.x - horizontalTranslationPx,
-                y = offset.y,
+    return pointerInput(gestureScope, clickEnabled, dragEnabled) {
+        if (dragEnabled) {
+            detectDragGesturesAfterLongPress(
+                onDragStart = { offset ->
+                    val event = gestureScope.eventChips.findEventAt(
+                        x = offset.x - gestureScope.horizontalTranslationPx,
+                        y = offset.y,
+                    )
+                    if (event != null) {
+                        gestureScope.onDragStart(event, offset)
+                    }
+                },
+                onDrag = { change, _ ->
+                    change.consume()
+                    gestureScope.onDragMove(change.position)
+                },
+                onDragEnd = { gestureScope.onDragEnd() },
+                onDragCancel = { gestureScope.onDragCancel() },
             )
-            if (event != null) {
-                onEventClick(event)
+        }
+        if (clickEnabled) {
+            detectTapGestures { offset ->
+                val event = gestureScope.eventChips.findEventAt(
+                    x = offset.x - gestureScope.horizontalTranslationPx,
+                    y = offset.y,
+                )
+                if (event != null) {
+                    gestureScope.onEventClick(event)
+                }
             }
         }
     }

@@ -36,7 +36,7 @@ data class WeekViewStyle(
     val headerHeightDp: Dp = 40.dp,
     val headerPaddingDp: Dp = 4.dp,
     val allDayEventTextSizeSp: androidx.compose.ui.unit.TextUnit = 12.sp,
-    val allDayEventPaddingVerticalDp: Dp = 4.dp,
+    val allDayEventPaddingVerticalDp: Dp = 5.dp,
     val arrangeAllDayEventsVertically: Boolean = true,
     val timeColumnWidthDp: Dp = 56.dp,
     val timeColumnPaddingDp: Dp = 8.dp,
@@ -76,6 +76,7 @@ data class WeekViewStyle(
     val singleDayHorizontalPaddingDp: Dp = 0.dp,
     val scrollToCurrentTimeOnLaunch: Boolean = true,
     val horizontalScrollingEnabled: Boolean = true,
+    val dragAndDropEnabled: Boolean = true,
 ) {
     init {
         require(numberOfVisibleDays >= 1) { "numberOfVisibleDays must be at least 1" }

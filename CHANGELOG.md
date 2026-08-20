@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.0-alpha
+
+Drag-and-drop event editing on the day grid.
+
+### Added
+
+- Long-press on a timed event chip to drag it to a new time slot
+- `onEventDrop` callback with the event and its new start/end times
+- `dragAndDropEnabled` on `WeekViewStyle` (default `true`; requires `onEventDrop` to activate)
+- 15-minute snap increments while dragging
+- Edge auto-scroll when dragging near the top, bottom, or horizontal edges of the grid
+- Ghost chip preview with drag styling during the gesture
+- Unit tests for quarter-hour snapping, time-from-point mapping, and drag auto-scroll math
+
+### Not yet implemented
+
+- Accessibility
+
 ## 0.6.0-alpha
 
 Pinch-to-zoom for hour height.
