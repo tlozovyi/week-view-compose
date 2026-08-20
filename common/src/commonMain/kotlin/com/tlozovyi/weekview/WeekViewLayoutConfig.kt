@@ -21,7 +21,8 @@ import kotlinx.datetime.LocalDateTime
 /**
  * Layout configuration used by calendar algorithms.
  */
-internal data class WeekViewLayoutConfig(
+@PublicApi
+data class WeekViewLayoutConfig(
     val minHour: Int = 0,
     val maxHour: Int = 24,
     val arrangeAllDayEventsVertically: Boolean = false,
@@ -29,5 +30,12 @@ internal data class WeekViewLayoutConfig(
     fun minutesFromStart(eventStartTime: LocalDateTime): Int {
         val hoursFromStart = eventStartTime.hour - minHour
         return hoursFromStart * 60 + eventStartTime.minute
+    }
+
+    @PublicApi
+    companion object {
+        fun of(minHour: Int, maxHour: Int): WeekViewLayoutConfig {
+            return WeekViewLayoutConfig(minHour = minHour, maxHour = maxHour)
+        }
     }
 }

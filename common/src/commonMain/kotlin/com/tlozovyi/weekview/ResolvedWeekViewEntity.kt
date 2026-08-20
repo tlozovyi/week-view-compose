@@ -20,20 +20,35 @@ package com.tlozovyi.weekview
 import kotlinx.datetime.LocalDateTime
 import kotlin.math.roundToInt
 
-internal sealed class ResolvedWeekViewEntity {
+@PublicApi
+sealed class ResolvedWeekViewEntity {
 
-    internal abstract val id: Long
-    internal abstract val title: String
-    internal abstract val subtitle: String?
-    internal abstract val startTime: LocalDateTime
-    internal abstract val endTime: LocalDateTime
-    internal abstract val isAllDay: Boolean
-    internal abstract val style: Style
+    @PublicApi
+    abstract val id: Long
+
+    @PublicApi
+    abstract val title: String
+
+    @PublicApi
+    abstract val subtitle: String?
+
+    @PublicApi
+    abstract val startTime: LocalDateTime
+
+    @PublicApi
+    abstract val endTime: LocalDateTime
+
+    @PublicApi
+    abstract val isAllDay: Boolean
+
+    @PublicApi
+    abstract val style: Style
 
     internal val period: Period by lazy {
         Period.fromDate(startTime)
     }
 
+    @PublicApi
     data class Event<T>(
         override val id: Long,
         override val title: String,
@@ -56,6 +71,7 @@ internal sealed class ResolvedWeekViewEntity {
         override val isAllDay: Boolean = false
     }
 
+    @PublicApi
     data class Style(
         val textColor: Long? = null,
         val backgroundColor: Long? = null,

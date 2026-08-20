@@ -2,7 +2,7 @@
 
 Compose Multiplatform calendar week view for Android and iOS.
 
-**Status:** `0.2.0-alpha` — date header, time column, and scrollable day grid.
+**Status:** `0.3.0-alpha` — date header, time column, scrollable day grid, and event chips.
 
 ## Acknowledgements
 
@@ -36,8 +36,14 @@ Calendar layout concepts and algorithms from that project are ported to Kotlin M
 # Build Android sample
 ./gradlew :sample:assembleDebug
 
-# Compile iOS framework (requires macOS + Xcode)
-./gradlew :compose-ui:compileKotlinIosSimulatorArm64
+# Run iOS sample (requires macOS + Xcode 15+)
+open iosApp/iosApp.xcodeproj
+# Select an iPhone simulator and press Run in Xcode.
+# Or from the command line:
+# xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' build
+
+# Compile iOS Kotlin framework only
+./gradlew :sample:embedAndSignAppleFrameworkForXcode
 ```
 
 ## Usage (alpha)

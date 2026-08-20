@@ -19,6 +19,7 @@ package com.tlozovyi.weekview
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /**
  * Visual configuration for [WeekView].
@@ -54,6 +55,17 @@ data class WeekViewStyle(
     val daySeparatorWidthDp: Dp = 1.dp,
     val nowLineWidthDp: Dp = 2.dp,
     val nowDotRadiusDp: Dp = 5.dp,
+    val defaultEventBackgroundColor: Color = Color(0xFF9FC6E7),
+    val defaultEventTextColor: Color = Color.White,
+    val defaultEventBorderColor: Color? = null,
+    val eventCornerRadiusDp: Dp = 4.dp,
+    val eventPaddingHorizontalDp: Dp = 4.dp,
+    val eventPaddingVerticalDp: Dp = 2.dp,
+    val eventTextSizeSp: androidx.compose.ui.unit.TextUnit = 12.sp,
+    val overlappingEventGapDp: Dp = 1.dp,
+    val eventMarginVerticalDp: Dp = 2.dp,
+    val singleDayHorizontalPaddingDp: Dp = 0.dp,
+    val scrollToCurrentTimeOnLaunch: Boolean = true,
 ) {
     init {
         require(numberOfVisibleDays >= 1) { "numberOfVisibleDays must be at least 1" }

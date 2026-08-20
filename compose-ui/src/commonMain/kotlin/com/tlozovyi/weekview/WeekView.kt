@@ -29,19 +29,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Compose Multiplatform week calendar view.
  *
- * Renders the date header, time column, day grid, and current-time indicator.
- * Event chips are accepted but not drawn until a later release.
+ * Renders the date header, time column, day grid, current-time indicator, and event chips.
  */
 @PublicApi
 @Composable
@@ -56,8 +58,10 @@ fun WeekView(
     timeFormatter: TimeFormatter = ::defaultTimeFormatter,
 ) {
     val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
     val verticalScrollState = rememberScrollState()
+    val layoutEngine = remember { WeekViewLayoutEngine() }
 
     BoxWithConstraints(
         modifier = modifier
@@ -72,6 +76,36 @@ fun WeekView(
                 firstVisibleDate = firstVisibleDate,
                 density = density,
             )
+        }
+
+        val layoutConfig = remember(style) {
+            WeekViewLayoutConfig.of(minHour = style.minHour, maxHour = style.maxHour)
+        }
+
+        val eventChips = remember(events, layout, style, layoutConfig, density) {
+            val resolvedEvents = events.toResolvedEntities(style, density, layout.visibleDates)
+            layoutEngine.createEventChips(resolvedEvents, layoutConfig)
+                .filter { !it.event.isAllDay }
+        }
+
+        val chipsByDate = remember(eventChips) {
+            eventChips.groupBy { it.startTime.date }
+        }
+
+        LaunchedEffect(layout, style, today) {
+            if (!style.scrollToCurrentTimeOnLaunch || !layout.visibleDates.contains(today)) {
+                return@LaunchedEffect
+            }
+
+            val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+            if (now.hour < style.minHour || now.hour >= style.maxHour) {
+                return@LaunchedEffect
+            }
+
+            val y = layout.hourY(now.hour, style.minHour) + (now.minute / 60f) * layout.hourHeightPx
+            val viewportHeight = (layout.viewportHeightPx - layout.headerHeightPx).coerceAtLeast(0f)
+            val target = (y - viewportHeight / 2f).coerceAtLeast(0f).toInt()
+            verticalScrollState.scrollTo(target)
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
@@ -111,6 +145,23 @@ fun WeekView(
                             today = today,
                         )
 
+                        layout.visibleDates.forEachIndexed { dateIndex, date ->
+                            val chipsForDate = chipsByDate[date].orEmpty()
+                            chipsForDate.calculateBoundsForDate(
+                                dateIndex = dateIndex,
+                                layout = gridLayout,
+                                style = style,
+                                density = density,
+                            )
+                            drawWeekViewEventChips(
+                                eventChips = chipsForDate,
+                                layout = gridLayout,
+                                style = style,
+                                density = density,
+                                textMeasurer = textMeasurer,
+                            )
+                        }
+
                         if (style.showTimeColumnSeparator) {
                             drawLine(
                                 color = style.timeColumnSeparatorColor,
@@ -124,7 +175,4 @@ fun WeekView(
             }
         }
     }
-
-    @Suppress("UNUSED_PARAMETER")
-    val pendingEventRendering = events
 }

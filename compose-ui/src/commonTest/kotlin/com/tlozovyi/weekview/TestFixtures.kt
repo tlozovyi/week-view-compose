@@ -16,18 +16,17 @@
 
 package com.tlozovyi.weekview
 
-import kotlinx.datetime.LocalDateTime
+import androidx.compose.ui.unit.Density
 
-/**
- * Describes an event rendered in [WeekView].
- */
-@PublicApi
-data class WeekViewEvent(
-    val id: Long,
-    val title: String,
-    val startTime: LocalDateTime,
-    val endTime: LocalDateTime,
-    val subtitle: String? = null,
-    val isAllDay: Boolean = false,
-    val style: WeekViewEventStyle? = null,
-)
+internal class FakeDensity(
+    override val density: Float,
+) : Density {
+    override val fontScale: Float = 1f
+}
+
+internal fun assertFloatEquals(expected: Float, actual: Float, absoluteTolerance: Float) {
+    kotlin.test.assertTrue(
+        kotlin.math.abs(expected - actual) <= absoluteTolerance,
+        "Expected $expected but was $actual",
+    )
+}

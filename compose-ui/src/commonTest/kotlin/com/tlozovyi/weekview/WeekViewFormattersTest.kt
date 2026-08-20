@@ -53,23 +53,10 @@ class WeekViewLayoutTest {
         )
 
         assertEquals(4, layout.visibleDates.size)
-        assertEquals(344f, layout.gridWidthPx, absoluteTolerance = 0.01f)
-        assertEquals(86f, layout.dayWidthPx, absoluteTolerance = 0.01f)
-        assertEquals(1200f, layout.gridHeightPx, absoluteTolerance = 0.01f)
+        assertFloatEquals(344f, layout.gridWidthPx, absoluteTolerance = 0.01f)
+        assertFloatEquals(86f, layout.dayWidthPx, absoluteTolerance = 0.01f)
+        assertFloatEquals(1200f, layout.gridHeightPx, absoluteTolerance = 0.01f)
         assertTrue(layout.visibleDates.first() == LocalDate(2026, 8, 20))
         assertTrue(layout.visibleDates.last() == LocalDate(2026, 8, 23))
     }
-}
-
-private class FakeDensity(
-    override val density: Float,
-) : androidx.compose.ui.unit.Density {
-    override val fontScale: Float = 1f
-}
-
-private fun assertEquals(expected: Float, actual: Float, absoluteTolerance: Float) {
-    kotlin.test.assertTrue(
-        kotlin.math.abs(expected - actual) <= absoluteTolerance,
-        "Expected $expected but was $actual",
-    )
 }

@@ -17,20 +17,30 @@
 package com.tlozovyi.weekview.sample
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.tlozovyi.weekview.WeekView
 import com.tlozovyi.weekview.WeekViewEvent
+import com.tlozovyi.weekview.WeekViewEventStyle
 import com.tlozovyi.weekview.WeekViewStyle
+import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
+import kotlinx.datetime.todayIn
 
 @Composable
 fun SampleApp() {
     MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding(),
+        ) {
             WeekView(
                 events = sampleEvents(),
                 style = WeekViewStyle(
@@ -38,6 +48,7 @@ fun SampleApp() {
                     minHour = 7,
                     maxHour = 22,
                 ),
+                firstVisibleDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
             )
         }
     }
@@ -57,6 +68,27 @@ private fun sampleEvents(): List<WeekViewEvent> {
             title = "Design review",
             startTime = date.atTime(14, 0),
             endTime = date.atTime(15, 0),
+            style = WeekViewEventStyle(backgroundColor = Color(0xFF81C784)),
+        ),
+        WeekViewEvent(
+            id = 3,
+            title = "Overlapping A",
+            startTime = date.atTime(10, 0),
+            endTime = date.atTime(11, 30),
+        ),
+        WeekViewEvent(
+            id = 4,
+            title = "Overlapping B",
+            startTime = date.atTime(10, 30),
+            endTime = date.atTime(12, 0),
+            style = WeekViewEventStyle(backgroundColor = Color(0xFFFFB74D)),
+        ),
+        WeekViewEvent(
+            id = 5,
+            title = "1:1",
+            startTime = date.atTime(10, 15),
+            endTime = date.atTime(11, 0),
+            style = WeekViewEventStyle(backgroundColor = Color(0xFF9575CD)),
         ),
     )
 }

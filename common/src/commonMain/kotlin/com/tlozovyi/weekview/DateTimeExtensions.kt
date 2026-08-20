@@ -80,6 +80,9 @@ internal fun LocalDateTime.withTimeAtEndOfPeriod(hour: Int): LocalDateTime {
 
 internal fun LocalDateTime.isAtStartOfPeriod(hour: Int): Boolean = isEqual(withTimeAtStartOfPeriod(hour))
 
+@PublicApi
+fun LocalDateTime.isAtEndOfPeriod(hour: Int): Boolean = isEqual(withTimeAtEndOfPeriod(hour))
+
 internal val LocalDateTime.atStartOfDay: LocalDateTime
     get() = withTimeAtStartOfPeriod(0)
 

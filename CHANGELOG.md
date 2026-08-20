@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.3.0-alpha
+
+Event chip rendering on the day grid.
+
+### Added
+
+- Timed event chips drawn on the scrollable day grid (rounded rects + title text)
+- Overlapping event layout via ported `EventChipsFactory` / `WeekViewLayoutEngine`
+- `WeekViewEventStyle` for per-event color and shape overrides
+- Event styling properties on `WeekViewStyle` (colors, padding, corner radius, gaps)
+- `EventChipBoundsCalculator` for grid-local chip positioning
+- Auto scroll to current time on launch (`scrollToCurrentTimeOnLaunch`, default `true`)
+- Public `WeekViewLayoutEngine`, `EventChip`, `ChipBounds`, and entity types in `common`
+- Sample events demonstrating horizontal overlap
+- Unit tests for event chip bounds calculation
+
+### Not yet implemented
+
+- All-day events in the header row
+- Horizontal scrolling / paging between date ranges
+- Gestures, drag-and-drop, click handling
+- Accessibility
+
 ## 0.2.0-alpha
 
 Basic calendar grid rendering.

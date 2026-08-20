@@ -16,18 +16,19 @@
 
 package com.tlozovyi.weekview
 
-import kotlinx.datetime.LocalDateTime
-
 /**
- * Describes an event rendered in [WeekView].
+ * Computes [EventChip] layout slots for overlapping timed events.
  */
 @PublicApi
-data class WeekViewEvent(
-    val id: Long,
-    val title: String,
-    val startTime: LocalDateTime,
-    val endTime: LocalDateTime,
-    val subtitle: String? = null,
-    val isAllDay: Boolean = false,
-    val style: WeekViewEventStyle? = null,
-)
+class WeekViewLayoutEngine {
+
+    private val eventChipsFactory = EventChipsFactory()
+
+    @PublicApi
+    fun createEventChips(
+        events: List<ResolvedWeekViewEntity>,
+        config: WeekViewLayoutConfig,
+    ): List<EventChip> {
+        return eventChipsFactory.create(events, config)
+    }
+}

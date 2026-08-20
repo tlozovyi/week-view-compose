@@ -22,7 +22,8 @@ import kotlinx.datetime.LocalDateTime
 /**
  * Encapsulates a [ResolvedWeekViewEntity] and its layout slot within a day column.
  */
-internal data class EventChip(
+@PublicApi
+data class EventChip(
     val event: ResolvedWeekViewEntity,
     val index: Int,
     val startTime: LocalDateTime,
@@ -32,10 +33,11 @@ internal data class EventChip(
     val id: String = "${event.id}-$index"
     val eventId: Long = event.id
 
+    @PublicApi
     var bounds: ChipBounds = ChipBounds()
 
     val durationInMinutes: Int by lazy {
-        endTime minutesUntil startTime
+        startTime minutesUntil endTime
     }
 
     var relativeStart: Float = 0f
@@ -50,7 +52,8 @@ internal data class EventChip(
         get() = event.endTime > endTime
 }
 
-internal data class ChipBounds(
+@PublicApi
+data class ChipBounds(
     var left: Float = 0f,
     var top: Float = 0f,
     var right: Float = 0f,
