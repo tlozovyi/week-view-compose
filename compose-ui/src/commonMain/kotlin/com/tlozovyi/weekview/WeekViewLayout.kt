@@ -54,6 +54,9 @@ internal data class WeekViewLayout(
     fun dateIndex(date: LocalDate): Int = renderDates.indexOf(date)
 }
 
+/** Matches Compose layout height after the px → dp → px round-trip used by [Modifier.height]. */
+internal fun Density.layoutHeightPx(heightPx: Float): Float = heightPx.toDp().toPx()
+
 internal fun calculateWeekViewLayout(
     viewportWidthPx: Float,
     viewportHeightPx: Float,
@@ -61,10 +64,11 @@ internal fun calculateWeekViewLayout(
     firstVisibleDate: LocalDate,
     density: Density,
     horizontalScrollingEnabled: Boolean = false,
+    hourHeightPxOverride: Float? = null,
 ): WeekViewLayout {
     val timeColumnWidthPx = with(density) { style.timeColumnWidthDp.toPx() }
     val headerHeightPx = with(density) { style.headerHeightDp.toPx() }
-    val hourHeightPx = with(density) { style.hourHeightDp.toPx() }
+    val hourHeightPx = hourHeightPxOverride ?: with(density) { style.hourHeightDp.toPx() }
     val viewportGridWidthPx = (viewportWidthPx - timeColumnWidthPx).coerceAtLeast(0f)
     val dayWidthPx = viewportGridWidthPx / style.numberOfVisibleDays
     val columnGapPx = with(density) { style.columnGapDp.toPx() }

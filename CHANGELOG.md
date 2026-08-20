@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.0-alpha
+
+Pinch-to-zoom for hour height.
+
+### Added
+
+- Pinch-to-zoom on the day grid to adjust hour row height
+- `minHourHeightDp`, `maxHourHeightDp`, and `pinchToZoomEnabled` on `WeekViewStyle`
+- Viewport-aware minimum hour height (cannot pinch out past the configured hour range filling the grid area)
+- Vertical scroll position scales proportionally while zooming
+- Pinch zoom anchors to the focal point under your fingers
+- Unit tests for hour-height clamping and focal-point scroll math
+
+### Not yet implemented
+
+- Drag-and-drop event editing
+- Accessibility
+
 ## 0.5.0-alpha
 
 MVP milestone — all-day events in the header row.
@@ -17,7 +35,6 @@ MVP milestone — all-day events in the header row.
 
 ### Not yet implemented
 
-- Pinch-to-zoom hour height
 - Drag-and-drop event editing
 - Accessibility
 

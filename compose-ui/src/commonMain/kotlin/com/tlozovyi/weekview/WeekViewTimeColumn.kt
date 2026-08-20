@@ -30,25 +30,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
 internal fun WeekViewTimeColumn(
     style: WeekViewStyle,
+    hourHeightDp: Dp,
+    gridHeightDp: Dp,
     timeFormatter: TimeFormatter,
 ) {
+    val hours = style.hours
     Box(
         modifier = Modifier
             .width(style.timeColumnWidthDp)
+            .height(gridHeightDp)
             .background(style.timeColumnBackgroundColor),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            for (hour in style.hours) {
+            hours.forEachIndexed { index, hour ->
+                val rowHeight = if (hour == hours.last) {
+                    gridHeightDp - hourHeightDp * (hours.count() - 1)
+                } else {
+                    hourHeightDp
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(style.hourHeightDp),
+                        .height(rowHeight),
                     contentAlignment = Alignment.CenterEnd,
                 ) {
                     Text(

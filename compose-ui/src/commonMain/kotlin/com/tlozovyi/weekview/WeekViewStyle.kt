@@ -30,6 +30,9 @@ data class WeekViewStyle(
     val minHour: Int = 0,
     val maxHour: Int = 24,
     val hourHeightDp: Dp = 50.dp,
+    val minHourHeightDp: Dp = 20.dp,
+    val maxHourHeightDp: Dp = 400.dp,
+    val pinchToZoomEnabled: Boolean = true,
     val headerHeightDp: Dp = 40.dp,
     val headerPaddingDp: Dp = 4.dp,
     val allDayEventTextSizeSp: androidx.compose.ui.unit.TextUnit = 12.sp,
@@ -79,6 +82,8 @@ data class WeekViewStyle(
         require(minHour in 0..23) { "minHour must be between 0 and 23" }
         require(maxHour in 1..24) { "maxHour must be between 1 and 24" }
         require(minHour < maxHour) { "minHour must be less than maxHour" }
+        require(minHourHeightDp.value >= 0f) { "minHourHeightDp must be non-negative" }
+        require(maxHourHeightDp >= minHourHeightDp) { "maxHourHeightDp must be >= minHourHeightDp" }
     }
 
     internal val hours: IntRange

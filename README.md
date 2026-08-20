@@ -2,7 +2,7 @@
 
 Compose Multiplatform calendar week view for Android and iOS.
 
-**Status:** `0.5.0-alpha` — calendar grid, event chips, tap handling, continuous horizontal scroll, and all-day events in the header.
+**Status:** `0.6.0-alpha` — calendar grid, event chips, tap handling, continuous horizontal scroll, all-day events, and pinch-to-zoom hour height.
 
 ## Acknowledgements
 
@@ -72,6 +72,8 @@ WeekView(
 ```
 
 All-day events (`isAllDay = true`) render as chips in the header row below the date labels. When a day has more than two all-day events, the header collapses to one chip plus a `+N` label; tap the arrow in the time column to expand or collapse.
+
+Pinch with two fingers on the day grid to zoom hour row height in and out. Limits are controlled by `minHourHeightDp` and `maxHourHeightDp` on `WeekViewStyle`.
 
 ## Versioning
 

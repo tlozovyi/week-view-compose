@@ -25,13 +25,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.rememberScrollableState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -44,8 +44,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import kotlin.math.abs
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -76,7 +80,7 @@ fun WeekView(
     val eventTextMeasurer = rememberTextMeasurer(cacheSize = 64)
     val allDayTextMeasurer = rememberTextMeasurer(cacheSize = 32)
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
-    val verticalScrollState = rememberScrollState()
+    var gridScrollOffsetPx by remember { mutableFloatStateOf(0f) }
     val layoutEngine = remember { WeekViewLayoutEngine() }
     val horizontalScrollingEnabled = style.horizontalScrollingEnabled && onFirstVisibleDateChange != null
     val eventClickEnabled = onEventClick != null
@@ -84,6 +88,14 @@ fun WeekView(
     var horizontalScrollOffsetPx by remember { mutableFloatStateOf(0f) }
     var allDayEventsExpanded by remember { mutableStateOf(false) }
     var anchorGeneration by remember { mutableIntStateOf(0) }
+    var hourHeightPx by remember(style.hourHeightDp, density) {
+        mutableFloatStateOf(with(density) { style.hourHeightDp.toPx() })
+    }
+    val hourHeightDp = with(density) { hourHeightPx.toDp() }
+
+    LaunchedEffect(style.hourHeightDp, density) {
+        hourHeightPx = with(density) { style.hourHeightDp.toPx() }
+    }
 
     LaunchedEffect(firstVisibleDate) {
         if (firstVisibleDate != anchorDate) {
@@ -102,7 +114,18 @@ fun WeekView(
             .fillMaxSize()
             .background(style.backgroundColor),
     ) {
-        val baseLayout = remember(maxWidth, maxHeight, style, anchorDate, density, horizontalScrollingEnabled) {
+        val configuredMinHourHeightPx = with(density) { style.minHourHeightDp.toPx() }
+        val configuredMaxHourHeightPx = with(density) { style.maxHourHeightDp.toPx() }
+
+        val baseLayout = remember(
+            maxWidth,
+            maxHeight,
+            style,
+            anchorDate,
+            density,
+            horizontalScrollingEnabled,
+            hourHeightPx,
+        ) {
             calculateWeekViewLayout(
                 viewportWidthPx = with(density) { maxWidth.toPx() },
                 viewportHeightPx = with(density) { maxHeight.toPx() },
@@ -110,6 +133,7 @@ fun WeekView(
                 firstVisibleDate = anchorDate,
                 density = density,
                 horizontalScrollingEnabled = horizontalScrollingEnabled,
+                hourHeightPxOverride = hourHeightPx,
             )
         }
 
@@ -249,20 +273,138 @@ fun WeekView(
             )
         }
 
-        LaunchedEffect(layout, style, today) {
-            if (!style.scrollToCurrentTimeOnLaunch || !layout.visibleDates.contains(today)) {
+        var isPinchZoomActive by remember { mutableStateOf(false) }
+        var pinchBaselineScrollOffsetPx by remember { mutableFloatStateOf(0f) }
+        var pinchBaselineLayoutGridHeightPx by remember { mutableFloatStateOf(0f) }
+        var pinchBaselineFocalY by remember { mutableFloatStateOf(0f) }
+        var measuredGridViewportHeightPx by remember { mutableFloatStateOf(0f) }
+        var hasScrolledToCurrentTimeOnLaunch by remember { mutableStateOf(false) }
+        val hourHeightPxState by rememberUpdatedState(hourHeightPx)
+        val gridScrollOffsetPxState by rememberUpdatedState(gridScrollOffsetPx)
+        val isPinchZoomActiveState by rememberUpdatedState(isPinchZoomActive)
+
+        LaunchedEffect(
+            style.scrollToCurrentTimeOnLaunch,
+            layout.visibleDates,
+            today,
+            layout.hourHeightPx,
+            layout.headerHeightPx,
+            layout.viewportHeightPx,
+        ) {
+            if (hasScrolledToCurrentTimeOnLaunch || !style.scrollToCurrentTimeOnLaunch) {
+                return@LaunchedEffect
+            }
+            if (!layout.visibleDates.contains(today)) {
                 return@LaunchedEffect
             }
 
             val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
             if (now.hour < style.minHour || now.hour >= style.maxHour) {
+                hasScrolledToCurrentTimeOnLaunch = true
                 return@LaunchedEffect
             }
 
             val y = layout.hourY(now.hour, style.minHour) + (now.minute / 60f) * layout.hourHeightPx
             val viewportHeight = (layout.viewportHeightPx - layout.headerHeightPx).coerceAtLeast(0f)
-            val target = (y - viewportHeight / 2f).coerceAtLeast(0f).toInt()
-            verticalScrollState.scrollTo(target)
+            gridScrollOffsetPx = (y - viewportHeight / 2f).coerceAtLeast(0f)
+            hasScrolledToCurrentTimeOnLaunch = true
+        }
+
+        val calculatedGridViewportHeightPx =
+            (baseLayout.viewportHeightPx - layout.headerHeightPx).coerceAtLeast(0f)
+        val gridViewportHeightPx = if (measuredGridViewportHeightPx > 0f) {
+            measuredGridViewportHeightPx
+        } else {
+            calculatedGridViewportHeightPx
+        }
+
+        val pinchZoomConfig = remember(
+            configuredMinHourHeightPx,
+            configuredMaxHourHeightPx,
+            baseLayout.viewportHeightPx,
+            layout.headerHeightPx,
+            style.hoursCount,
+            gridViewportHeightPx,
+        ) {
+            WeekViewPinchZoomConfig(
+                configuredMinHourHeightPx = configuredMinHourHeightPx,
+                configuredMaxHourHeightPx = configuredMaxHourHeightPx,
+                viewportHeightPx = baseLayout.viewportHeightPx,
+                headerHeightPx = layout.headerHeightPx,
+                hoursCount = style.hoursCount,
+                viewportGridHeightPx = gridViewportHeightPx,
+            )
+        }
+        val pinchZoomConfigState by rememberUpdatedState(pinchZoomConfig)
+
+        fun layoutGridHeightForHourHeight(hourHeight: Float): Float {
+            return with(density) { layoutHeightPx(style.hoursCount * hourHeight) }
+        }
+
+        fun maxGridScrollOffsetPx(hourHeight: Float = hourHeightPx): Float {
+            return maxVerticalScrollOffsetPx(
+                gridHeightPx = layoutGridHeightForHourHeight(hourHeight),
+                viewportGridHeightPx = gridViewportHeightPx,
+            )
+        }
+
+        fun clampGridScrollOffsetPx(scrollOffsetPx: Float, hourHeight: Float = hourHeightPx): Float {
+            return scrollOffsetPx.coerceIn(0f, maxGridScrollOffsetPx(hourHeight))
+        }
+
+        fun pinchScrollForHourHeight(hourHeight: Float): Float {
+            val layoutGridHeightPx = layoutGridHeightForHourHeight(hourHeight)
+            val rawScrollOffsetPx = scrollOffsetForLayoutGridZoomAtFocalPoint(
+                baselineScrollOffsetPx = pinchBaselineScrollOffsetPx,
+                baselineLayoutGridHeightPx = pinchBaselineLayoutGridHeightPx,
+                newLayoutGridHeightPx = layoutGridHeightPx,
+                focalYInViewportPx = pinchBaselineFocalY,
+            )
+            return clampGridScrollOffsetPx(
+                scrollOffsetPx = rawScrollOffsetPx,
+                hourHeight = hourHeight,
+            )
+        }
+
+        SideEffect {
+            if (!isPinchZoomActive) {
+                gridScrollOffsetPx = clampGridScrollOffsetPx(gridScrollOffsetPx)
+            }
+        }
+
+        val maxGridScrollOffsetPxState by rememberUpdatedState(maxGridScrollOffsetPx())
+        val gridScrollableState = rememberScrollableState { delta ->
+            if (isPinchZoomActiveState) {
+                return@rememberScrollableState 0f
+            }
+            val newOffsetPx = (gridScrollOffsetPxState - delta).coerceIn(0f, maxGridScrollOffsetPxState)
+            val consumed = gridScrollOffsetPxState - newOffsetPx
+            gridScrollOffsetPx = newOffsetPx
+            consumed
+        }
+
+        val onPinchStart = remember(density) {
+            { focalYInViewportPx: Float ->
+                val currentScrollOffsetPx = clampGridScrollOffsetPx(gridScrollOffsetPx)
+                isPinchZoomActive = true
+                pinchBaselineScrollOffsetPx = currentScrollOffsetPx
+                gridScrollOffsetPx = currentScrollOffsetPx
+                pinchBaselineLayoutGridHeightPx = layoutGridHeightForHourHeight(hourHeightPx)
+                pinchBaselineFocalY = focalYInViewportPx
+            }
+        }
+        val onPinchStep = remember {
+            { newHourHeightPx: Float ->
+                hourHeightPx = newHourHeightPx
+                gridScrollOffsetPx = pinchScrollForHourHeight(newHourHeightPx)
+            }
+        }
+        val onPinchEnd = remember {
+            { newHourHeightPx: Float ->
+                hourHeightPx = newHourHeightPx
+                gridScrollOffsetPx = pinchScrollForHourHeight(newHourHeightPx)
+                isPinchZoomActive = false
+            }
         }
 
         Column(
@@ -307,29 +449,59 @@ fun WeekView(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .clipToBounds()
+                    .background(style.backgroundColor)
+                    .onSizeChanged { measuredGridViewportHeightPx = it.height.toFloat() },
             ) {
+                val layoutGridHeightPx = with(density) { layoutHeightPx(gridLayout.gridHeightPx) }
+                val gridHeightDp = with(density) { layoutGridHeightPx.toDp() }
+                val displayGridLayout = if (abs(layoutGridHeightPx - gridLayout.gridHeightPx) < 0.5f) {
+                    gridLayout
+                } else {
+                    gridLayout.copy(
+                        hourHeightPx = layoutGridHeightPx / style.hoursCount,
+                        gridHeightPx = layoutGridHeightPx,
+                    )
+                }
+                val gridScrollModifier = Modifier
+                    .weekViewGridScroll(scrollOffsetPx = { gridScrollOffsetPxState })
+                    .scrollable(
+                        state = gridScrollableState,
+                        orientation = Orientation.Vertical,
+                        enabled = !isPinchZoomActive,
+                    )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight()
-                        .verticalScroll(verticalScrollState),
+                        .height(gridHeightDp)
+                        .weekViewPinchZoom(
+                            enabled = style.pinchToZoomEnabled,
+                            zoomConfig = { pinchZoomConfigState },
+                            hourHeightPx = { hourHeightPxState },
+                            onPinchStart = onPinchStart,
+                            onPinchStep = onPinchStep,
+                            onPinchEnd = onPinchEnd,
+                        )
+                        .then(gridScrollModifier),
                 ) {
                     WeekViewTimeColumn(
                         style = style,
+                        hourHeightDp = hourHeightDp,
+                        gridHeightDp = gridHeightDp,
                         timeFormatter = timeFormatter,
                     )
 
                     Box(
                         modifier = Modifier
                             .width(with(density) { layout.viewportGridWidthPx.toDp() })
-                            .fillMaxHeight()
+                            .height(gridHeightDp)
                             .clipToBounds(),
                     ) {
                         Canvas(
                             modifier = Modifier
                                 .width(with(density) { gridLayout.contentGridWidthPx.toDp() })
-                                .height(with(density) { gridLayout.gridHeightPx.toDp() })
+                                .height(gridHeightDp)
                                 .weekViewEventClick(
                                     enabled = eventClickEnabled,
                                     eventChips = eventChips,
@@ -339,15 +511,15 @@ fun WeekView(
                         ) {
                             translate(left = horizontalTranslationPx) {
                                 drawWeekViewGrid(
-                                    layout = gridLayout,
+                                    layout = displayGridLayout,
                                     style = style,
                                     today = today,
                                 )
 
-                                gridLayout.renderDates.forEach { date ->
+                                displayGridLayout.renderDates.forEach { date ->
                                     drawWeekViewEventChips(
                                         eventChips = chipsByDate[date].orEmpty(),
-                                        layout = gridLayout,
+                                        layout = displayGridLayout,
                                         style = style,
                                         density = density,
                                         textMeasurer = eventTextMeasurer,

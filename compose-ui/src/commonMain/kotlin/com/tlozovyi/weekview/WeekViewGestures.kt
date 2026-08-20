@@ -21,14 +21,144 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import kotlin.math.abs
+import kotlin.math.hypot
+import kotlin.math.roundToInt
 
 private enum class ScrollAxis {
     Horizontal,
     Vertical,
+}
+
+internal fun Modifier.weekViewGridScroll(
+    scrollOffsetPx: () -> Float,
+): Modifier = layout { measurable, constraints ->
+        val viewportHeight = constraints.maxHeight
+        val placeable = measurable.measure(
+            constraints.copy(
+                minHeight = 0,
+                maxHeight = Constraints.Infinity,
+            ),
+        )
+        val maxScroll = (placeable.height - viewportHeight).coerceAtLeast(0)
+        val scroll = scrollOffsetPx().roundToInt().coerceIn(0, maxScroll)
+        layout(constraints.maxWidth, viewportHeight) {
+            placeable.placeRelative(0, -scroll)
+        }
+    }
+
+internal fun Modifier.weekViewPinchZoom(
+    enabled: Boolean,
+    zoomConfig: () -> WeekViewPinchZoomConfig,
+    hourHeightPx: () -> Float,
+    onPinchStart: (focalYInViewportPx: Float) -> Unit,
+    onPinchStep: (newHourHeightPx: Float) -> Unit,
+    onPinchEnd: (newHourHeightPx: Float) -> Unit,
+): Modifier {
+    if (!enabled) {
+        return this
+    }
+
+    return pointerInput(enabled) {
+        awaitEachGesture {
+            awaitFirstDown(requireUnconsumed = false)
+
+            var event: PointerEvent
+            do {
+                event = awaitPointerEvent(PointerEventPass.Initial)
+            } while (event.pressedPointerCount() < 2 && event.changes.any { it.pressed })
+
+            if (event.pressedPointerCount() < 2) {
+                return@awaitEachGesture
+            }
+
+            val initialSpan = event.pinchSpan()
+            if (initialSpan <= 0f) {
+                return@awaitEachGesture
+            }
+
+            val baselineHourHeightPx = hourHeightPx()
+            val baselineFocalY = event.pinchCentroid().y
+            onPinchStart(baselineFocalY)
+
+            var latestHourHeightPx = baselineHourHeightPx
+            var latestSpan = initialSpan
+
+            do {
+                event.changes.forEach { change ->
+                    if (change.pressed) {
+                        change.consume()
+                    }
+                }
+
+                val span = event.pinchSpan()
+                if (span > 0f) {
+                    latestSpan = span
+                    val cumulativeScale = span / initialSpan
+                    val result = applyPinchZoomFromBaseline(
+                        baselineHourHeightPx = baselineHourHeightPx,
+                        cumulativeScale = cumulativeScale,
+                        baselineScrollOffsetPx = 0f,
+                        focalYInViewportPx = baselineFocalY,
+                        config = zoomConfig(),
+                    )
+                    if (result != null) {
+                        val (newHourHeightPx, _) = result
+                        latestHourHeightPx = newHourHeightPx
+                        onPinchStep(newHourHeightPx)
+                    }
+                }
+
+                event = awaitPointerEvent(PointerEventPass.Initial)
+            } while (event.pressedPointerCount() >= 2)
+
+            val finalHourHeightPx = clampPinchHourHeightPx(
+                baselineHourHeightPx = baselineHourHeightPx,
+                cumulativeScale = latestSpan / initialSpan,
+                config = zoomConfig(),
+            )
+            onPinchStep(finalHourHeightPx)
+            onPinchEnd(finalHourHeightPx)
+        }
+    }
+}
+
+private fun PointerEvent.pressedPointerCount(): Int = changes.count { it.pressed }
+
+private fun PointerEvent.pinchSpan(): Float {
+    val pressed = changes.filter { it.pressed }
+    if (pressed.size < 2) {
+        return 0f
+    }
+    return distanceBetween(pressed[0], pressed[1])
+}
+
+private fun PointerEvent.pinchCentroid(): Offset {
+    val pressed = changes.filter { it.pressed }
+    if (pressed.isEmpty()) {
+        return Offset.Zero
+    }
+    var x = 0f
+    var y = 0f
+    pressed.forEach { change ->
+        x += change.position.x
+        y += change.position.y
+    }
+    val count = pressed.size.toFloat()
+    return Offset(x / count, y / count)
+}
+
+private fun distanceBetween(first: PointerInputChange, second: PointerInputChange): Float {
+    val dx = first.position.x - second.position.x
+    val dy = first.position.y - second.position.y
+    return hypot(dx, dy)
 }
 
 internal fun Modifier.weekViewScrollGestures(
