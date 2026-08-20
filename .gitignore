@@ -1,0 +1,40 @@
+# Gradle
+.gradle/
+build/
+gradle-app.setting
+
+# Android
+*.apk
+*.ap_
+*.dex
+*.class
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Kotlin
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+out/
+
+# macOS
+.DS_Store
+
+# iOS / Xcode
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcuserdata/
+*.xcuserstate
+*.hmap
+*.ipa
+DerivedData/
+
+# Logs
+*.log
