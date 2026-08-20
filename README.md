@@ -38,7 +38,7 @@ Compose Multiplatform calendar week view for **Android** and **iOS**.
 | **Release** | 0.8.0-beta |
 | **minSdk (Android)** | 24 |
 | **compileSdk / targetSdk** | 35 |
-| **Kotlin** | 2.0.21 |
+| **Kotlin** | 2.1.20 |
 | **Compose Multiplatform** | 1.7.3 |
 | **AGP** | 8.6.1 (JDK 17 required to build from source) |
 

@@ -201,7 +201,7 @@ private fun dragMinutesBetween(earlier: LocalDateTime, later: LocalDateTime): In
     val dayDelta = later.date.toEpochDays() - earlier.date.toEpochDays()
     val earlierMinutes = earlier.hour * 60 + earlier.minute
     val laterMinutes = later.hour * 60 + later.minute
-    return dayDelta * 1_440 + (laterMinutes - earlierMinutes)
+    return (dayDelta * 1_440 + (laterMinutes - earlierMinutes)).toInt()
 }
 
 private fun LocalDateTime.addMinutes(minutes: Int): LocalDateTime {

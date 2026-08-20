@@ -17,7 +17,7 @@
  */
 package com.tlozovyi.weekview
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -56,7 +56,7 @@ internal fun LocalDateTime.isBefore(other: LocalDateTime): Boolean = this < othe
 
 internal fun LocalDateTime.isAfter(other: LocalDateTime): Boolean = this > other
 
-internal fun LocalDateTime.toEpochDays(): Int = date.toEpochDays()
+internal fun LocalDateTime.toEpochDays(): Int = date.toEpochDays().toInt()
 
 internal infix fun LocalDateTime.minutesUntil(other: LocalDateTime): Int {
     return (other.totalMinutesOfDay() - totalMinutesOfDay()).toInt()
@@ -130,7 +130,7 @@ internal val LocalDate.lengthOfMonth: Int
         } else {
             LocalDate(year, month.number + 1, 1)
         }
-        return nextMonth.toEpochDays() - toEpochDays()
+        return (nextMonth.toEpochDays() - toEpochDays()).toInt()
     }
 
 internal val LocalDateTime.monthNumber: Int
