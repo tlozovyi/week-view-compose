@@ -19,19 +19,30 @@ package com.tlozovyi.weekview
 import kotlinx.datetime.LocalDateTime
 
 /**
- * Layout configuration used by calendar algorithms.
+ * Layout configuration passed to [WeekViewLayoutEngine] when building [EventChip] lists.
+ *
+ * Mirrors the hour range and all-day arrangement flags from [WeekViewStyle].
  */
 @PublicApi
 data class WeekViewLayoutConfig(
+    /** First visible hour (inclusive), matching [WeekViewStyle.minHour]. */
     val minHour: Int = 0,
+    /** Last visible hour (exclusive), matching [WeekViewStyle.maxHour]. */
     val maxHour: Int = 24,
+    /** Whether all-day events stack vertically in the header. */
     val arrangeAllDayEventsVertically: Boolean = false,
 ) {
+    /**
+     * Returns minutes from [minHour]:00 to [eventStartTime] on the same calendar day.
+     *
+     * Used to position event chips vertically within the day grid.
+     */
     fun minutesFromStart(eventStartTime: LocalDateTime): Int {
         val hoursFromStart = eventStartTime.hour - minHour
         return hoursFromStart * 60 + eventStartTime.minute
     }
 
+    /** Factory matching [WeekViewStyle] hour and all-day fields. */
     @PublicApi
     companion object {
         fun of(

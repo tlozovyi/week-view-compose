@@ -19,7 +19,16 @@ package com.tlozovyi.weekview
 import kotlinx.datetime.LocalDateTime
 
 /**
- * Describes an event rendered in [WeekView].
+ * User-supplied event displayed by [WeekView].
+ *
+ * @property id Stable identifier used for hit-testing, drag-and-drop, and chip layout.
+ * @property title Primary label drawn on the event chip.
+ * @property startTime Inclusive start date and time.
+ * @property endTime Exclusive end date and time for timed events; for all-day events, typically
+ *   midnight on the day after the last visible day.
+ * @property subtitle Optional secondary line (not yet rendered on all platforms).
+ * @property isAllDay When `true`, the event is drawn in the header all-day row instead of the grid.
+ * @property style Optional per-event colors and shape; unset fields fall back to [WeekViewStyle].
  */
 @PublicApi
 data class WeekViewEvent(

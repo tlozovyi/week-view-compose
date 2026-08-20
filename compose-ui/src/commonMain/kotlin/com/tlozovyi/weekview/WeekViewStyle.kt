@@ -18,64 +18,117 @@ package com.tlozovyi.weekview
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Visual configuration for [WeekView].
+ * Visual and behavioral configuration for [WeekView].
+ *
+ * Pass an instance to [WeekView] or use [Default] for library defaults. Most color and dimension
+ * properties have sensible defaults and only need overriding for branding.
  */
 @PublicApi
 data class WeekViewStyle(
+    /** Number of day columns visible at once (minimum 1). */
     val numberOfVisibleDays: Int = 3,
+    /** First hour row drawn in the grid (0–23). */
     val minHour: Int = 0,
+    /** Exclusive end hour of the grid (1–24). */
     val maxHour: Int = 24,
+    /** Default height of one hour row before pinch-to-zoom. */
     val hourHeightDp: Dp = 50.dp,
+    /** Minimum hour row height when pinching out. */
     val minHourHeightDp: Dp = 20.dp,
+    /** Maximum hour row height when pinching in. */
     val maxHourHeightDp: Dp = 400.dp,
+    /** Enables two-finger pinch-to-zoom on the day grid. */
     val pinchToZoomEnabled: Boolean = true,
+    /** Height of the date label row at the top of the header. */
     val headerHeightDp: Dp = 40.dp,
+    /** Padding above and below all-day chips inside the header. */
     val headerPaddingDp: Dp = 4.dp,
-    val allDayEventTextSizeSp: androidx.compose.ui.unit.TextUnit = 12.sp,
+    /** Text size of all-day event titles. */
+    val allDayEventTextSizeSp: TextUnit = 12.sp,
+    /** Vertical padding inside each all-day chip (combined with text size sets chip height). */
     val allDayEventPaddingVerticalDp: Dp = 5.dp,
+    /** Stacks overlapping all-day events in separate rows when `true`; otherwise overlaps horizontally. */
     val arrangeAllDayEventsVertically: Boolean = true,
+    /** Width of the hour-label column on the left. */
     val timeColumnWidthDp: Dp = 56.dp,
+    /** Horizontal padding inside the time column labels. */
     val timeColumnPaddingDp: Dp = 8.dp,
+    /** Background behind the entire view. */
     val backgroundColor: Color = Color.White,
+    /** Background of the date header row. */
     val headerBackgroundColor: Color = Color(0xFFF5F5F5),
+    /** Color of date labels in the header. */
     val headerTextColor: Color = Color.Black,
+    /** Background of the time column. */
     val timeColumnBackgroundColor: Color = Color(0xFFF5F5F5),
+    /** Color of hour labels in the time column. */
     val timeColumnTextColor: Color = Color(0xFF757575),
+    /** Background for day columns before the current time (non-today). */
     val pastDayBackgroundColor: Color = Color(0xFFF7F7F7),
+    /** Background for day columns after the current time (non-today). */
     val futureDayBackgroundColor: Color = Color.White,
+    /** Background for today's column before the current time. */
     val todayPastBackgroundColor: Color = Color(0xFFF0F0F0),
+    /** Background for today's column after the current time. */
     val todayFutureBackgroundColor: Color = Color(0xFFFAFAFA),
+    /** Color of horizontal lines separating hour rows. */
     val hourSeparatorColor: Color = Color(0xFFE0E0E0),
+    /** Color of vertical lines separating day columns. */
     val daySeparatorColor: Color = Color(0xFFE0E0E0),
+    /** Color of the separator between the time column and the grid. */
     val timeColumnSeparatorColor: Color = Color(0xFFE0E0E0),
+    /** Color of the current-time horizontal line. */
     val nowLineColor: Color = Color(0xFF4285F4),
+    /** Draws horizontal lines at each hour boundary. */
     val showHourSeparators: Boolean = true,
+    /** Draws vertical lines between day columns. */
     val showDaySeparators: Boolean = true,
+    /** Draws a vertical line between the time column and the grid. */
     val showTimeColumnSeparator: Boolean = true,
+    /** Draws the current-time indicator line across the grid. */
     val showNowLine: Boolean = true,
+    /** Draws a dot at the left end of the current-time line. */
     val showNowLineDot: Boolean = true,
+    /** Stroke height of hour separator lines. */
     val hourSeparatorHeightDp: Dp = 1.dp,
+    /** Stroke width of day separator lines. */
     val daySeparatorWidthDp: Dp = 1.dp,
+    /** Stroke width of the current-time line. */
     val nowLineWidthDp: Dp = 2.dp,
+    /** Radius of the current-time dot. */
     val nowDotRadiusDp: Dp = 5.dp,
+    /** Default fill color for timed event chips. */
     val defaultEventBackgroundColor: Color = Color(0xFF9FC6E7),
+    /** Default text color for timed event chips. */
     val defaultEventTextColor: Color = Color.White,
+    /** Default border color for timed event chips; `null` means no border. */
     val defaultEventBorderColor: Color? = null,
+    /** Corner radius of timed event chips. */
     val eventCornerRadiusDp: Dp = 4.dp,
+    /** Horizontal padding inside timed event chips. */
     val eventPaddingHorizontalDp: Dp = 4.dp,
+    /** Vertical padding inside timed event chips. */
     val eventPaddingVerticalDp: Dp = 2.dp,
-    val eventTextSizeSp: androidx.compose.ui.unit.TextUnit = 12.sp,
+    /** Text size of timed event titles. */
+    val eventTextSizeSp: TextUnit = 12.sp,
+    /** Gap between horizontally overlapping event chips in the same row. */
     val overlappingEventGapDp: Dp = 1.dp,
+    /** Vertical margin between stacked event chips. */
     val eventMarginVerticalDp: Dp = 2.dp,
-    /** Horizontal gap between day columns; event chips use [dayWidth] minus this value. */
+    /** Horizontal gap between day columns; event chips use day width minus this value. */
     val columnGapDp: Dp = 1.dp,
+    /** Extra horizontal inset for single-day mode event chips. */
     val singleDayHorizontalPaddingDp: Dp = 0.dp,
+    /** Scrolls the grid to center the current time once when the view is first shown. */
     val scrollToCurrentTimeOnLaunch: Boolean = true,
+    /** Allows continuous horizontal scrolling when [WeekView] receives [onFirstVisibleDateChange]. */
     val horizontalScrollingEnabled: Boolean = true,
+    /** Allows long-press drag-and-drop when [WeekView] receives [onEventDrop]. */
     val dragAndDropEnabled: Boolean = true,
 ) {
     init {
@@ -93,6 +146,7 @@ data class WeekViewStyle(
     internal val hoursCount: Int
         get() = maxHour - minHour
 
+    /** Default style used when none is supplied to [WeekView]. */
     @PublicApi
     companion object {
         val Default = WeekViewStyle()

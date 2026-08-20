@@ -83,6 +83,53 @@ internal fun isDayColumnVisibleOnScreen(
     return screenRight > 0f && screenLeft < viewportWidthPx
 }
 
+/** Content-space X for the now dot: today's divider, pinned to the time-column edge when scrolled off left. */
+internal fun nowDotCenterContentX(
+    columnLeft: Float,
+    horizontalTranslationPx: Float,
+): Float {
+    return maxOf(columnLeft, -horizontalTranslationPx)
+}
+
+/** Screen-space X for [nowDotCenterContentX] (0 = time-column divider). */
+internal fun nowDotCenterScreenX(
+    columnLeft: Float,
+    horizontalTranslationPx: Float,
+): Float {
+    return nowDotCenterContentX(columnLeft, horizontalTranslationPx) + horizontalTranslationPx
+}
+
+/** Whether the now dot should be drawn for today's column at the current horizontal scroll. */
+internal fun isNowDotVisibleOnScreen(
+    screenLeft: Float,
+    screenRight: Float,
+    viewportWidthPx: Float,
+): Boolean {
+    return isDayColumnVisibleOnScreen(screenLeft, screenRight, viewportWidthPx)
+}
+
+/** Whether any part of today's column intersects the grid viewport (uses [renderDates], not [WeekViewLayout.visibleDates]). */
+internal fun isTodayColumnVisibleOnScreen(
+    layout: WeekViewLayout,
+    today: LocalDate,
+    horizontalTranslationPx: Float,
+): Boolean {
+    val todayIndex = layout.dateIndex(today)
+    if (todayIndex < 0) {
+        return false
+    }
+    val (screenLeft, screenRight) = dayColumnScreenBounds(
+        columnIndex = todayIndex,
+        dayWidthPx = layout.dayWidthPx,
+        horizontalTranslationPx = horizontalTranslationPx,
+    )
+    return isDayColumnVisibleOnScreen(
+        screenLeft = screenLeft,
+        screenRight = screenRight,
+        viewportWidthPx = layout.viewportGridWidthPx,
+    )
+}
+
 internal fun headerLabelCenteredScreenX(
     screenLeft: Float,
     screenRight: Float,

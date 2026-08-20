@@ -84,6 +84,15 @@ internal fun clampVerticalScrollOffsetPx(
     )
 }
 
+/** Converts a pinch centroid Y in scrollable grid content space to viewport space. */
+internal fun focalYInViewportPx(
+    focalYInContentPx: Float,
+    scrollOffsetPx: Float,
+    viewportGridHeightPx: Float,
+): Float {
+    return (focalYInContentPx - scrollOffsetPx).coerceIn(0f, viewportGridHeightPx)
+}
+
 /**
  * Keeps the grid content under [focalYInViewportPx] fixed while [hourHeightScale] is applied.
  */

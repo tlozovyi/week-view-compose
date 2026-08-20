@@ -17,13 +17,24 @@
 package com.tlozovyi.weekview
 
 /**
- * Computes [EventChip] layout slots for overlapping timed events.
+ * Computes overlapping [EventChip] layout slots for timed events.
+ *
+ * Ported from the original Android Week View layout engine. [WeekView] uses an internal instance;
+ * expose this type when building custom views that reuse the same overlap algorithm.
  */
 @PublicApi
 class WeekViewLayoutEngine {
 
     private val eventChipsFactory = EventChipsFactory()
 
+    /**
+     * Splits [events] into per-day [EventChip] rows with relative horizontal positions for overlaps.
+     *
+     * @param events Resolved entities covering the visible (or render-buffer) date range.
+     * @param config Hour range and all-day flags from [WeekViewLayoutConfig.of].
+     * @return Chips ready for bounds calculation and drawing; all-day entities are included and
+     *   filtered by the caller.
+     */
     @PublicApi
     fun createEventChips(
         events: List<ResolvedWeekViewEntity>,

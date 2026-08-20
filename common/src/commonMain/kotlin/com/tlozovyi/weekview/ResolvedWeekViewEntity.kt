@@ -20,27 +20,40 @@ package com.tlozovyi.weekview
 import kotlinx.datetime.LocalDateTime
 import kotlin.math.roundToInt
 
+/**
+ * Normalized event model used by the layout engine after applying [WeekViewStyle] defaults.
+ *
+ * [WeekView] maps [WeekViewEvent] instances to [Event] internally. Advanced integrations may
+ * construct [ResolvedWeekViewEntity] values directly when using [WeekViewLayoutEngine].
+ */
 @PublicApi
 sealed class ResolvedWeekViewEntity {
 
+    /** Stable identifier shared with the source [WeekViewEvent.id]. */
     @PublicApi
     abstract val id: Long
 
+    /** Primary label. */
     @PublicApi
     abstract val title: String
 
+    /** Optional secondary label. */
     @PublicApi
     abstract val subtitle: String?
 
+    /** Inclusive start of the full event. */
     @PublicApi
     abstract val startTime: LocalDateTime
 
+    /** End of the full event. */
     @PublicApi
     abstract val endTime: LocalDateTime
 
+    /** Whether the event is shown in the all-day header row. */
     @PublicApi
     abstract val isAllDay: Boolean
 
+    /** Resolved colors and shape in pixel-oriented form for the layout engine. */
     @PublicApi
     abstract val style: Style
 
@@ -48,6 +61,11 @@ sealed class ResolvedWeekViewEntity {
         Period.fromDate(startTime)
     }
 
+    /**
+     * A calendar event with optional typed payload.
+     *
+     * @param T User data attached to the event (typically [WeekViewEvent] in the Compose UI module).
+     */
     @PublicApi
     data class Event<T>(
         override val id: Long,
@@ -71,12 +89,22 @@ sealed class ResolvedWeekViewEntity {
         override val isAllDay: Boolean = false
     }
 
+    /**
+     * Platform-neutral styling for layout and rendering.
+     *
+     * Colors are ARGB [Long] values; dimensions are in pixels after density conversion.
+     */
     @PublicApi
     data class Style(
+        /** Text color as ARGB, or `null` for default. */
         val textColor: Long? = null,
+        /** Background color as ARGB, or `null` for default. */
         val backgroundColor: Long? = null,
+        /** Border color as ARGB, or `null` for default. */
         val borderColor: Long? = null,
+        /** Border width in pixels, or `null` for no border. */
         val borderWidth: Int? = null,
+        /** Corner radius in pixels, or `null` for default. */
         val cornerRadius: Int? = null,
     )
 

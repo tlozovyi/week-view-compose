@@ -154,6 +154,74 @@ class WeekViewHorizontalScrollTest {
     }
 
     @Test
+    fun nowDotCenterScreenXPinsToTimeDividerWhenTodayScrollsOffLeft() {
+        val dayWidthPx = 100f
+        val columnLeft = 200f
+        val horizontalTranslationPx = -250f
+
+        assertEquals(0f, nowDotCenterScreenX(columnLeft, horizontalTranslationPx), absoluteTolerance = 0.01f)
+    }
+
+    @Test
+    fun nowDotCenterScreenXUsesTodayDividerWhenFullyVisible() {
+        val columnLeft = 200f
+        val horizontalTranslationPx = -200f
+
+        assertEquals(0f, nowDotCenterScreenX(columnLeft, horizontalTranslationPx), absoluteTolerance = 0.01f)
+    }
+
+    @Test
+    fun nowDotCenterScreenXFollowsTodayDividerWhenPastTimeEdge() {
+        val columnLeft = 250f
+        val horizontalTranslationPx = -200f
+
+        assertEquals(50f, nowDotCenterScreenX(columnLeft, horizontalTranslationPx), absoluteTolerance = 0.01f)
+    }
+
+    @Test
+    fun isNowDotVisibleOnScreenHidesWhenTodayFullyScrolledToFuture() {
+        assertEquals(false, isNowDotVisibleOnScreen(screenLeft = -150f, screenRight = -50f, viewportWidthPx = 300f))
+    }
+
+    @Test
+    fun isNowDotVisibleOnScreenShowsWhenTodayPartiallyVisibleFromTimeDivider() {
+        assertEquals(true, isNowDotVisibleOnScreen(screenLeft = -40f, screenRight = 60f, viewportWidthPx = 300f))
+    }
+
+    @Test
+    fun isTodayColumnVisibleOnScreenUsesRenderDatesNotVisibleDates() {
+        val layout = WeekViewLayout(
+            viewportWidthPx = 400f,
+            viewportHeightPx = 800f,
+            timeColumnWidthPx = 56f,
+            headerHeightPx = 40f,
+            hourHeightPx = 50f,
+            dayWidthPx = 100f,
+            columnGapPx = 1f,
+            viewportGridWidthPx = 300f,
+            contentGridWidthPx = 700f,
+            gridHeightPx = 750f,
+            visibleDates = listOf(
+                LocalDate(2026, 8, 21),
+                LocalDate(2026, 8, 22),
+                LocalDate(2026, 8, 23),
+            ),
+            renderDates = buildRenderDates(
+                firstVisibleDate = LocalDate(2026, 8, 21),
+                numberOfVisibleDays = 3,
+                scrollBufferDays = HORIZONTAL_SCROLL_BUFFER_DAYS,
+            ),
+            scrollBufferDays = HORIZONTAL_SCROLL_BUFFER_DAYS,
+        )
+        val today = LocalDate(2026, 8, 20)
+        assertEquals(1, layout.dateIndex(today))
+        val horizontalTranslationPx = -140f
+
+        assertEquals(true, isTodayColumnVisibleOnScreen(layout, today, horizontalTranslationPx))
+        assertEquals(false, layout.visibleDates.contains(today))
+    }
+
+    @Test
     fun offScreenBufferColumnStartsOutsideViewportAtRest() {
         val numberOfVisibleDays = 3
         val dayWidthPx = 100f

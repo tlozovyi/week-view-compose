@@ -39,9 +39,6 @@ internal fun DrawScope.drawWeekViewGrid(
     if (style.showDaySeparators) {
         drawDaySeparators(layout, style)
     }
-    if (style.showNowLine) {
-        drawNowLine(layout, style, today)
-    }
 }
 
 private fun DrawScope.drawDayBackgrounds(
@@ -119,11 +116,22 @@ private fun DrawScope.drawDaySeparators(
     }
 }
 
-private fun DrawScope.drawNowLine(
+/**
+ * Draws the current-time horizontal line on top of event chips (matching the original View library).
+ *
+ * [horizontalTranslationPx] is the same value passed to [androidx.compose.ui.graphics.drawscope.translate]
+ * when rendering the grid content.
+ */
+internal fun DrawScope.drawWeekViewNowLine(
     layout: WeekViewLayout,
     style: WeekViewStyle,
     today: LocalDate,
+    horizontalTranslationPx: Float,
 ) {
+    if (!style.showNowLine) {
+        return
+    }
+
     val todayIndex = layout.dateIndex(today)
     if (todayIndex < 0) {
         return
@@ -134,25 +142,94 @@ private fun DrawScope.drawNowLine(
         return
     }
 
-    val y = layout.hourY(now.hour, style.minHour) + (now.minute / 60f) * layout.hourHeightPx
-    val left = layout.dayStartX(todayIndex)
-    val right = left + layout.dayWidthPx
-    val stroke = style.nowLineWidthDp.toPx()
+    val (screenLeft, screenRight) = dayColumnScreenBounds(
+        columnIndex = todayIndex,
+        dayWidthPx = layout.dayWidthPx,
+        horizontalTranslationPx = horizontalTranslationPx,
+    )
+    if (!isDayColumnVisibleOnScreen(
+            screenLeft = screenLeft,
+            screenRight = screenRight,
+            viewportWidthPx = layout.viewportGridWidthPx,
+        )
+    ) {
+        return
+    }
+
+    val y = nowLineY(layout, style, now)
+    val columnLeft = layout.dayStartX(todayIndex)
+    val columnRight = columnLeft + layout.dayWidthPx
+    val viewportLeft = -horizontalTranslationPx
+    val viewportRight = viewportLeft + layout.viewportGridWidthPx
+    val lineStartX = maxOf(columnLeft, viewportLeft)
+    val lineEndX = minOf(columnRight, viewportRight)
+    if (lineStartX >= lineEndX) {
+        return
+    }
 
     drawLine(
         color = style.nowLineColor,
-        start = Offset(left, y),
-        end = Offset(right, y),
-        strokeWidth = stroke,
+        start = Offset(lineStartX, y),
+        end = Offset(lineEndX, y),
+        strokeWidth = style.nowLineWidthDp.toPx(),
     )
+}
 
-    if (style.showNowLineDot) {
-        drawCircle(
-            color = style.nowLineColor,
-            radius = style.nowDotRadiusDp.toPx(),
-            center = Offset(left, y),
-        )
+/**
+ * Draws the current-time dot centered on today's leading day divider, above all grid layers.
+ */
+internal fun DrawScope.drawWeekViewNowDot(
+    layout: WeekViewLayout,
+    style: WeekViewStyle,
+    today: LocalDate,
+    horizontalTranslationPx: Float,
+) {
+    if (!style.showNowLine || !style.showNowLineDot) {
+        return
     }
+
+    val todayIndex = layout.dateIndex(today)
+    if (todayIndex < 0) {
+        return
+    }
+
+    val now = currentDateTime()
+    if (now.hour < style.minHour || now.hour >= style.maxHour) {
+        return
+    }
+
+    val (screenLeft, screenRight) = dayColumnScreenBounds(
+        columnIndex = todayIndex,
+        dayWidthPx = layout.dayWidthPx,
+        horizontalTranslationPx = horizontalTranslationPx,
+    )
+    if (!isNowDotVisibleOnScreen(
+            screenLeft = screenLeft,
+            screenRight = screenRight,
+            viewportWidthPx = layout.viewportGridWidthPx,
+        )
+    ) {
+        return
+    }
+
+    val columnLeft = layout.dayStartX(todayIndex)
+    val dotCenterX = nowDotCenterContentX(
+        columnLeft = columnLeft,
+        horizontalTranslationPx = horizontalTranslationPx,
+    )
+    drawCircle(
+        color = style.nowLineColor,
+        radius = style.nowDotRadiusDp.toPx(),
+        center = Offset(dotCenterX, nowLineY(layout, style, now)),
+    )
+}
+
+private fun nowLineY(
+    layout: WeekViewLayout,
+    style: WeekViewStyle,
+    now: LocalDateTime,
+): Float {
+    return layout.hourY(now.hour, style.minHour) + (now.minute / 60f) * layout.hourHeightPx
 }
 
 private fun currentDateTime(): LocalDateTime {

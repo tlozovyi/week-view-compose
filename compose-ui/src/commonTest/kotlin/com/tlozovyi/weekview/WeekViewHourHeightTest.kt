@@ -77,6 +77,34 @@ class WeekViewHourHeightTest {
     }
 
     @Test
+    fun focalYInViewportPxSubtractsScrollOffset() {
+        assertEquals(
+            150f,
+            focalYInViewportPx(
+                focalYInContentPx = 350f,
+                scrollOffsetPx = 200f,
+                viewportGridHeightPx = 400f,
+            ),
+        )
+    }
+
+    @Test
+    fun scrollOffsetForLayoutGridZoomAtFocalPointUsesViewportFocalY() {
+        val scrollAfter = scrollOffsetForLayoutGridZoomAtFocalPoint(
+            baselineScrollOffsetPx = 200f,
+            baselineLayoutGridHeightPx = 500f,
+            newLayoutGridHeightPx = 1000f,
+            focalYInViewportPx = 150f,
+        )
+
+        assertEquals(550f, scrollAfter)
+
+        val contentBefore = 200f + 150f
+        val contentAfter = scrollAfter + 150f
+        assertEquals(contentBefore * 2f, contentAfter)
+    }
+
+    @Test
     fun scrollOffsetForZoomKeepsFocalPointStable() {
         val scrollBefore = 200f
         val focalY = 150f

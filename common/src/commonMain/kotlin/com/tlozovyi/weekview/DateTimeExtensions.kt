@@ -80,6 +80,14 @@ internal fun LocalDateTime.withTimeAtEndOfPeriod(hour: Int): LocalDateTime {
 
 internal fun LocalDateTime.isAtStartOfPeriod(hour: Int): Boolean = isEqual(withTimeAtStartOfPeriod(hour))
 
+/**
+ * Returns whether this date-time equals the last instant of the configured hour range.
+ *
+ * Used internally when clipping multi-day events at day boundaries; exposed for custom layout
+ * engines that reuse the same hour-range semantics as [WeekViewStyle].
+ *
+ * @param hour Exclusive end hour from [WeekViewLayoutConfig.maxHour] / [WeekViewStyle.maxHour].
+ */
 @PublicApi
 fun LocalDateTime.isAtEndOfPeriod(hour: Int): Boolean = isEqual(withTimeAtEndOfPeriod(hour))
 

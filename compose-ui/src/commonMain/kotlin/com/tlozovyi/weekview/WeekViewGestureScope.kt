@@ -19,10 +19,10 @@ package com.tlozovyi.weekview
 import androidx.compose.ui.geometry.Offset
 
 /**
- * Mutable callback holder for pointer gestures.
+ * Mutable callback holder wired into [pointerInput] gesture detectors.
  *
- * Updated from [androidx.compose.runtime.SideEffect] so [androidx.compose.ui.input.pointer.pointerInput]
- * blocks are not recreated mid-gesture when drag state changes.
+ * Updated from [androidx.compose.runtime.SideEffect] on each frame so gesture blocks are not
+ * recreated when drag or scroll state changes mid-gesture.
  */
 internal class WeekViewGestureScope {
     var isScrollBlocked: () -> Boolean = { false }

@@ -18,13 +18,27 @@ package com.tlozovyi.weekview
 
 import kotlinx.datetime.number
 
-/** Formats an hour index (0–23) for the time column. */
+/**
+ * Formats an hour index (0–23) for the time column.
+ *
+ * @param hour Hour of day in 24-hour form.
+ * @return Localized or custom label shown beside the corresponding grid row.
+ */
 typealias TimeFormatter = (hour: Int) -> String
 
-/** Formats a visible date for the header row. */
+/**
+ * Formats a visible date for the header row.
+ *
+ * @param year Calendar year.
+ * @param month Month number (1–12).
+ * @param dayOfMonth Day of month (1–31).
+ * @param dayOfWeekIndex Zero-based index matching ISO weekday order (Monday = 0).
+ */
 typealias DateFormatter = (year: Int, month: Int, dayOfMonth: Int, dayOfWeekIndex: Int) -> String
 
-/** Default 12-hour time labels for the time column. */
+/**
+ * Default 12-hour time labels for the time column (e.g. `"9 AM"`, `"2 PM"`).
+ */
 @PublicApi
 fun defaultTimeFormatter(hour: Int): String {
     val normalized = hour % 24
@@ -45,7 +59,12 @@ private val SHORT_WEEKDAY_NAMES = listOf(
     "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun",
 )
 
-/** Default date labels for the header row. */
+/**
+ * Default date labels for the header row.
+ *
+ * Uses full weekday names for single-day mode, short names for 2–6 visible days, and a single
+ * letter when seven or more days are shown.
+ */
 @PublicApi
 fun defaultDateFormatter(
     year: Int,

@@ -19,19 +19,13 @@ package com.tlozovyi.weekview
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.rememberScrollableState
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -44,24 +38,35 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
+import androidx.compose.ui.unit.Dp
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
-import kotlin.math.abs
 
 /**
  * Compose Multiplatform week calendar view.
  *
- * Renders the date header, time column, day grid, current-time indicator, and event chips.
+ * Renders a scrollable date header, time column, day grid, current-time indicator, timed event
+ * chips, and all-day events. Supports horizontal paging, pinch-to-zoom, tap, and drag-and-drop.
+ *
+ * @param events Timed and all-day events to display. The caller owns the list and should update it
+ *   when [onEventDrop] returns new times.
+ * @param modifier Layout modifier for the outer container.
+ * @param style Visual configuration ([WeekViewStyle.Default] when omitted).
+ * @param firstVisibleDate First day column shown at the left edge of the viewport.
+ * @param onFirstVisibleDateChange Called when the user scrolls horizontally to a new date range.
+ *   Required for horizontal scrolling; when `null`, [WeekViewStyle.horizontalScrollingEnabled] has
+ *   no effect.
+ * @param onEventClick Called when the user taps a timed or all-day event chip.
+ * @param onEventDrop Called when the user finishes dragging a timed event. Receives the event and
+ *   its snapped start/end times. Requires [WeekViewStyle.dragAndDropEnabled].
+ * @param dateFormatter Formats date labels in the header row.
+ * @param timeFormatter Formats hour labels in the time column.
  */
 @PublicApi
 @Composable
@@ -83,19 +88,35 @@ fun WeekView(
     val eventTextMeasurer = rememberTextMeasurer(cacheSize = 64)
     val allDayTextMeasurer = rememberTextMeasurer(cacheSize = 32)
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
-    var gridScrollOffsetPx by remember { mutableFloatStateOf(0f) }
     val layoutEngine = remember { WeekViewLayoutEngine() }
+    val gestureScope = remember { WeekViewGestureScope() }
+
     val horizontalScrollingEnabled = style.horizontalScrollingEnabled && onFirstVisibleDateChange != null
     val eventClickEnabled = onEventClick != null
     val eventDragEnabled = style.dragAndDropEnabled && onEventDrop != null
+
     var anchorDate by remember { mutableStateOf(firstVisibleDate) }
     var horizontalScrollOffsetPx by remember { mutableFloatStateOf(0f) }
     var allDayEventsExpanded by remember { mutableStateOf(false) }
     var anchorGeneration by remember { mutableIntStateOf(0) }
+    var gridScrollOffsetPx by remember { mutableFloatStateOf(0f) }
     var hourHeightPx by remember(style.hourHeightDp, density) {
         mutableFloatStateOf(with(density) { style.hourHeightDp.toPx() })
     }
+    var isPinchZoomActive by remember { mutableStateOf(false) }
+    var dragState by remember { mutableStateOf<WeekViewDragState?>(null) }
+    var dragScrollEdge by remember { mutableStateOf(DragScrollEdge.None) }
+    var pinchBaselineScrollOffsetPx by remember { mutableFloatStateOf(0f) }
+    var pinchBaselineLayoutGridHeightPx by remember { mutableFloatStateOf(0f) }
+    var pinchBaselineFocalY by remember { mutableFloatStateOf(0f) }
+    var measuredGridViewportHeightPx by remember { mutableFloatStateOf(0f) }
+    var hasScrolledToCurrentTimeOnLaunch by remember { mutableStateOf(false) }
+
     val hourHeightDp = with(density) { hourHeightPx.toDp() }
+    val hourHeightPxState by rememberUpdatedState(hourHeightPx)
+    val gridScrollOffsetPxState by rememberUpdatedState(gridScrollOffsetPx)
+    val isPinchZoomActiveState by rememberUpdatedState(isPinchZoomActive)
+    val dragStateState by rememberUpdatedState(dragState)
 
     LaunchedEffect(style.hourHeightDp, density) {
         hourHeightPx = with(density) { style.hourHeightDp.toPx() }
@@ -147,7 +168,11 @@ fun WeekView(
             scrollBufferDays = baseLayout.scrollBufferDays,
         )
 
-        val eventDateRange = if (horizontalScrollingEnabled) baseLayout.renderDates else baseLayout.visibleDates
+        val eventDateRange = if (horizontalScrollingEnabled) {
+            baseLayout.renderDates
+        } else {
+            baseLayout.visibleDates
+        }
 
         val layoutConfig = remember(style) {
             WeekViewLayoutConfig.of(
@@ -157,40 +182,16 @@ fun WeekView(
             )
         }
 
-        val allEventChips = remember(events, eventDateRange, anchorGeneration, style, layoutConfig, density) {
-            val resolvedEvents = events.toResolvedEntities(style, density, eventDateRange)
-            layoutEngine.createEventChips(resolvedEvents, layoutConfig)
-        }
-
-        val eventChips = remember(allEventChips) {
-            allEventChips.filter { !it.event.isAllDay }
-        }
-
-        val allDayEventChips = remember(allEventChips) {
-            allEventChips.filter { it.event.isAllDay }
-        }
-
-        val chipsByDate = remember(eventChips) {
-            eventChips.groupBy { it.startTime.date }
-        }
-
-        val allDayChipsByDate = remember(allDayEventChips) {
-            allDayEventChips.groupBy { it.startTime.date }
-        }
-
-        val maxAllDayEventsPerDay = remember(allDayChipsByDate, baseLayout.renderDates) {
-            maxAllDayEventsPerDay(
-                allDayChipsByDate = allDayChipsByDate,
-                renderDates = baseLayout.renderDates,
-            )
-        }
-
-        val showAllDayToggle = remember(maxAllDayEventsPerDay, style.arrangeAllDayEventsVertically) {
-            showAllDayEventsToggleArrow(
-                maxAllDayEventsPerDay = maxAllDayEventsPerDay,
-                arrangeAllDayEventsVertically = style.arrangeAllDayEventsVertically,
-            )
-        }
+        val chipLayers = rememberWeekViewChipLayers(
+            events = events,
+            eventDateRange = eventDateRange,
+            anchorGeneration = anchorGeneration,
+            style = style,
+            layoutConfig = layoutConfig,
+            layoutEngine = layoutEngine,
+            renderDates = baseLayout.renderDates,
+            density = density,
+        )
 
         val expandProgress by animateFloatAsState(
             targetValue = if (allDayEventsExpanded) 1f else 0f,
@@ -201,137 +202,98 @@ fun WeekView(
             label = "allDayExpandProgress",
         )
 
+        val derivedLayouts = rememberWeekViewDerivedLayouts(
+            baseLayout = baseLayout,
+            maxAllDayEventsPerDay = chipLayers.maxAllDayEventsPerDay,
+            expandProgress = expandProgress,
+            arrangeAllDayEventsVertically = style.arrangeAllDayEventsVertically,
+            style = style,
+            density = density,
+        )
+
         val useExpandedAllDayLayout = shouldUseExpandedAllDayLayout(
-            showAllDayToggle = showAllDayToggle,
+            showAllDayToggle = derivedLayouts.showAllDayToggle,
             allDayEventsExpanded = allDayEventsExpanded,
             expandProgress = expandProgress,
         )
 
-        val allDayBoundsLayout = remember(baseLayout, maxAllDayEventsPerDay, style, density) {
-            baseLayout.withAllDaySection(
-                maxAllDayEventsPerDay = maxAllDayEventsPerDay,
-                allDayEventsExpanded = true,
-                style = style,
-                density = density,
-            ).copy(contentGridWidthPx = baseLayout.renderDates.size * baseLayout.dayWidthPx)
-        }
-
-        val layout = remember(
-            baseLayout,
-            maxAllDayEventsPerDay,
-            expandProgress,
-            showAllDayToggle,
-            style,
-            density,
-        ) {
-            val allDayLayout = if (showAllDayToggle) {
-                baseLayout.withAnimatedAllDaySection(
-                    maxAllDayEventsPerDay = maxAllDayEventsPerDay,
-                    expandProgress = expandProgress,
-                    style = style,
-                    density = density,
-                )
-            } else {
-                baseLayout.withAllDaySection(
-                    maxAllDayEventsPerDay = maxAllDayEventsPerDay,
-                    allDayEventsExpanded = false,
-                    style = style,
-                    density = density,
-                )
-            }
-            allDayLayout.copy(contentGridWidthPx = baseLayout.renderDates.size * baseLayout.dayWidthPx)
-        }
-
-        val gridLayout = remember(layout) {
-            layout.copy(contentGridWidthPx = layout.renderDates.size * layout.dayWidthPx)
-        }
-
-        val allDayChipBoundsLayout = if (showAllDayToggle) {
-            allDayBoundsLayout
-        } else {
-            layout
-        }
-
         applyAllDayEventVisibility(
-            allDayEventChips = allDayEventChips,
-            allDayChipsByDate = allDayChipsByDate,
-            renderDates = layout.renderDates,
+            allDayEventChips = chipLayers.allDayEventChips,
+            allDayChipsByDate = chipLayers.allDayChipsByDate,
+            renderDates = derivedLayouts.layout.renderDates,
             allDayEventsExpanded = useExpandedAllDayLayout,
             arrangeAllDayEventsVertically = style.arrangeAllDayEventsVertically,
         )
         prepareAllDayEventChipBounds(
-            allDayEventChips = allDayEventChips,
-            layout = allDayChipBoundsLayout,
+            allDayEventChips = chipLayers.allDayEventChips,
+            layout = derivedLayouts.allDayChipBoundsLayout,
             style = style,
             density = density,
-            chipsByDate = allDayChipsByDate,
+            chipsByDate = chipLayers.allDayChipsByDate,
             useExpandedAllDayLayout = useExpandedAllDayLayout,
         )
 
         SideEffect {
             prepareEventChipBounds(
-                layout = gridLayout,
+                layout = derivedLayouts.gridLayout,
                 style = style,
                 density = density,
-                chipsByDate = chipsByDate,
+                chipsByDate = chipLayers.chipsByDate,
             )
         }
 
-        var isPinchZoomActive by remember { mutableStateOf(false) }
-        var dragState by remember { mutableStateOf<WeekViewDragState?>(null) }
-        var dragScrollEdge by remember { mutableStateOf(DragScrollEdge.None) }
-        val isDragging = dragState != null
-        val gestureScope = remember { WeekViewGestureScope() }
-        var pinchBaselineScrollOffsetPx by remember { mutableFloatStateOf(0f) }
-        var pinchBaselineLayoutGridHeightPx by remember { mutableFloatStateOf(0f) }
-        var pinchBaselineFocalY by remember { mutableFloatStateOf(0f) }
-        var measuredGridViewportHeightPx by remember { mutableFloatStateOf(0f) }
-        var hasScrolledToCurrentTimeOnLaunch by remember { mutableStateOf(false) }
-        val hourHeightPxState by rememberUpdatedState(hourHeightPx)
-        val gridScrollOffsetPxState by rememberUpdatedState(gridScrollOffsetPx)
-        val isPinchZoomActiveState by rememberUpdatedState(isPinchZoomActive)
-        val dragStateState by rememberUpdatedState(dragState)
-
-        LaunchedEffect(
-            style.scrollToCurrentTimeOnLaunch,
-            layout.visibleDates,
-            today,
-            layout.hourHeightPx,
-            layout.headerHeightPx,
-            layout.viewportHeightPx,
-        ) {
-            if (hasScrolledToCurrentTimeOnLaunch || !style.scrollToCurrentTimeOnLaunch) {
-                return@LaunchedEffect
-            }
-            if (!layout.visibleDates.contains(today)) {
-                return@LaunchedEffect
-            }
-
-            val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-            if (now.hour < style.minHour || now.hour >= style.maxHour) {
-                hasScrolledToCurrentTimeOnLaunch = true
-                return@LaunchedEffect
-            }
-
-            val y = layout.hourY(now.hour, style.minHour) + (now.minute / 60f) * layout.hourHeightPx
-            val viewportHeight = (layout.viewportHeightPx - layout.headerHeightPx).coerceAtLeast(0f)
-            gridScrollOffsetPx = (y - viewportHeight / 2f).coerceAtLeast(0f)
-            hasScrolledToCurrentTimeOnLaunch = true
-        }
-
         val calculatedGridViewportHeightPx =
-            (baseLayout.viewportHeightPx - layout.headerHeightPx).coerceAtLeast(0f)
+            (baseLayout.viewportHeightPx - derivedLayouts.layout.headerHeightPx).coerceAtLeast(0f)
         val gridViewportHeightPx = if (measuredGridViewportHeightPx > 0f) {
             measuredGridViewportHeightPx
         } else {
             calculatedGridViewportHeightPx
         }
 
+        LaunchedEffect(
+            style.scrollToCurrentTimeOnLaunch,
+            derivedLayouts.layout.visibleDates,
+            today,
+            derivedLayouts.layout.hourHeightPx,
+            derivedLayouts.layout.headerHeightPx,
+            gridViewportHeightPx,
+        ) {
+            if (hasScrolledToCurrentTimeOnLaunch || !style.scrollToCurrentTimeOnLaunch) {
+                return@LaunchedEffect
+            }
+            val scrollOffsetPx = scrollOffsetForCurrentTime(
+                layout = derivedLayouts.layout,
+                style = style,
+                today = today,
+                gridViewportHeightPx = gridViewportHeightPx,
+            )
+            if (scrollOffsetPx != null) {
+                gridScrollOffsetPx = scrollOffsetPx
+            }
+            hasScrolledToCurrentTimeOnLaunch = true
+        }
+
+        val pinchScrollOps = createPinchScrollOps(
+            style = style,
+            density = density,
+            gridViewportHeightPx = gridViewportHeightPx,
+            pinchBaselineScrollOffsetPx = { pinchBaselineScrollOffsetPx },
+            pinchBaselineLayoutGridHeightPx = { pinchBaselineLayoutGridHeightPx },
+            pinchBaselineFocalY = { pinchBaselineFocalY },
+            hourHeightPx = hourHeightPx,
+        )
+
+        SideEffect {
+            if (!isPinchZoomActive) {
+                gridScrollOffsetPx = pinchScrollOps.clampGridScrollOffsetPx(gridScrollOffsetPx)
+            }
+        }
+
         val pinchZoomConfig = remember(
             configuredMinHourHeightPx,
             configuredMaxHourHeightPx,
             baseLayout.viewportHeightPx,
-            layout.headerHeightPx,
+            derivedLayouts.layout.headerHeightPx,
             style.hoursCount,
             gridViewportHeightPx,
         ) {
@@ -339,49 +301,14 @@ fun WeekView(
                 configuredMinHourHeightPx = configuredMinHourHeightPx,
                 configuredMaxHourHeightPx = configuredMaxHourHeightPx,
                 viewportHeightPx = baseLayout.viewportHeightPx,
-                headerHeightPx = layout.headerHeightPx,
+                headerHeightPx = derivedLayouts.layout.headerHeightPx,
                 hoursCount = style.hoursCount,
                 viewportGridHeightPx = gridViewportHeightPx,
             )
         }
         val pinchZoomConfigState by rememberUpdatedState(pinchZoomConfig)
 
-        fun layoutGridHeightForHourHeight(hourHeight: Float): Float {
-            return with(density) { layoutHeightPx(style.hoursCount * hourHeight) }
-        }
-
-        fun maxGridScrollOffsetPx(hourHeight: Float = hourHeightPx): Float {
-            return maxVerticalScrollOffsetPx(
-                gridHeightPx = layoutGridHeightForHourHeight(hourHeight),
-                viewportGridHeightPx = gridViewportHeightPx,
-            )
-        }
-
-        fun clampGridScrollOffsetPx(scrollOffsetPx: Float, hourHeight: Float = hourHeightPx): Float {
-            return scrollOffsetPx.coerceIn(0f, maxGridScrollOffsetPx(hourHeight))
-        }
-
-        fun pinchScrollForHourHeight(hourHeight: Float): Float {
-            val layoutGridHeightPx = layoutGridHeightForHourHeight(hourHeight)
-            val rawScrollOffsetPx = scrollOffsetForLayoutGridZoomAtFocalPoint(
-                baselineScrollOffsetPx = pinchBaselineScrollOffsetPx,
-                baselineLayoutGridHeightPx = pinchBaselineLayoutGridHeightPx,
-                newLayoutGridHeightPx = layoutGridHeightPx,
-                focalYInViewportPx = pinchBaselineFocalY,
-            )
-            return clampGridScrollOffsetPx(
-                scrollOffsetPx = rawScrollOffsetPx,
-                hourHeight = hourHeight,
-            )
-        }
-
-        SideEffect {
-            if (!isPinchZoomActive) {
-                gridScrollOffsetPx = clampGridScrollOffsetPx(gridScrollOffsetPx)
-            }
-        }
-
-        val maxGridScrollOffsetPxState by rememberUpdatedState(maxGridScrollOffsetPx())
+        val maxGridScrollOffsetPxState by rememberUpdatedState(pinchScrollOps.maxGridScrollOffsetPx())
         val gridScrollableState = rememberScrollableState { delta ->
             if (isPinchZoomActiveState || dragStateState != null) {
                 return@rememberScrollableState 0f
@@ -392,112 +319,62 @@ fun WeekView(
             consumed
         }
 
-        val onPinchStart = remember(density) {
-            { focalYInViewportPx: Float ->
-                val currentScrollOffsetPx = clampGridScrollOffsetPx(gridScrollOffsetPx)
+        val onPinchStart = remember(density, pinchScrollOps, gridViewportHeightPx) {
+            { focalYInContentPx: Float ->
+                val currentScrollOffsetPx = pinchScrollOps.clampGridScrollOffsetPx(gridScrollOffsetPx)
                 isPinchZoomActive = true
                 pinchBaselineScrollOffsetPx = currentScrollOffsetPx
                 gridScrollOffsetPx = currentScrollOffsetPx
-                pinchBaselineLayoutGridHeightPx = layoutGridHeightForHourHeight(hourHeightPx)
-                pinchBaselineFocalY = focalYInViewportPx
+                pinchBaselineLayoutGridHeightPx = pinchScrollOps.layoutGridHeightForHourHeight(hourHeightPx)
+                pinchBaselineFocalY = focalYInViewportPx(
+                    focalYInContentPx = focalYInContentPx,
+                    scrollOffsetPx = currentScrollOffsetPx,
+                    viewportGridHeightPx = gridViewportHeightPx,
+                )
             }
         }
-        val onPinchStep = remember {
+        val onPinchStep = remember(pinchScrollOps) {
             { newHourHeightPx: Float ->
                 hourHeightPx = newHourHeightPx
-                gridScrollOffsetPx = pinchScrollForHourHeight(newHourHeightPx)
+                gridScrollOffsetPx = pinchScrollOps.pinchScrollForHourHeight(newHourHeightPx)
             }
         }
-        val onPinchEnd = remember {
+        val onPinchEnd = remember(pinchScrollOps) {
             { newHourHeightPx: Float ->
                 hourHeightPx = newHourHeightPx
-                gridScrollOffsetPx = pinchScrollForHourHeight(newHourHeightPx)
+                gridScrollOffsetPx = pinchScrollOps.pinchScrollForHourHeight(newHourHeightPx)
                 isPinchZoomActive = false
             }
         }
 
-        LaunchedEffect(isDragging, dragScrollEdge, dragState?.eventId) {
-            if (!isDragging || dragScrollEdge == DragScrollEdge.None || dragState == null) {
-                return@LaunchedEffect
-            }
-
-            while (isActive && dragState != null && dragScrollEdge != DragScrollEdge.None) {
-                val state = dragState ?: break
-                val edge = dragScrollEdge
-                val delayMillis = dragScrollDelayMillis(edge)
-                if (delayMillis <= 0L) {
-                    break
-                }
-
-                when (edge) {
-                    DragScrollEdge.Top, DragScrollEdge.Bottom -> {
-                        val result = applyVerticalDragAutoScroll(
-                            edge = edge,
-                            gridScrollOffsetPx = gridScrollOffsetPx,
-                            maxGridScrollOffsetPx = maxGridScrollOffsetPx(),
-                            hourHeightPx = hourHeightPx,
-                            currentStartTime = state.currentStartTime,
-                            durationInMinutes = state.durationInMinutes,
-                        )
-                        if (result == null) {
-                            dragScrollEdge = DragScrollEdge.None
-                            break
-                        }
-                        val (newScrollOffsetPx, newStart, newEnd) = result
-                        gridScrollOffsetPx = clampGridScrollOffsetPx(newScrollOffsetPx)
-                        dragState = state.copy(
-                            currentStartTime = newStart,
-                            currentEndTime = newEnd,
-                        )
-                    }
-                    DragScrollEdge.Left, DragScrollEdge.Right -> {
-                        val result = applyHorizontalDragAutoScroll(
-                            edge = edge,
-                            currentStartTime = state.currentStartTime,
-                            durationInMinutes = state.durationInMinutes,
-                        )
-                        if (result == null) {
-                            dragScrollEdge = DragScrollEdge.None
-                            break
-                        }
-                        val (newStart, newEnd) = result
-                        dragState = state.copy(
-                            currentStartTime = newStart,
-                            currentEndTime = newEnd,
-                        )
-                        val dayDelta = if (edge == DragScrollEdge.Left) -1 else 1
-                        val newAnchorDate = anchorDate.plusDays(dayDelta)
-                        if (newAnchorDate != anchorDate) {
-                            anchorGeneration++
-                        }
-                        anchorDate = newAnchorDate
-                        onFirstVisibleDateChange?.invoke(newAnchorDate)
-                    }
-                    DragScrollEdge.None -> Unit
-                }
-
-                delay(delayMillis)
-            }
-        }
+        WeekViewDragAutoScrollEffect(
+            isDragging = dragState != null,
+            dragScrollEdge = dragScrollEdge,
+            dragState = dragState,
+            gridScrollOffsetPx = gridScrollOffsetPx,
+            maxGridScrollOffsetPx = { pinchScrollOps.maxGridScrollOffsetPx() },
+            hourHeightPx = hourHeightPx,
+            clampGridScrollOffsetPx = pinchScrollOps.clampGridScrollOffsetPx,
+            onGridScrollOffsetChange = { gridScrollOffsetPx = it },
+            onDragStateChange = { dragState = it },
+            onDragScrollEdgeChange = { dragScrollEdge = it },
+            anchorDate = anchorDate,
+            onAnchorDateChange = { anchorDate = it },
+            onAnchorGenerationBump = { anchorGeneration++ },
+            onFirstVisibleDateChange = onFirstVisibleDateChange,
+        )
 
         SideEffect {
-            gestureScope.isScrollBlocked = { dragState != null }
-            gestureScope.isPinchBlocked = { dragState != null }
-            gestureScope.onHorizontalDrag = { delta ->
-                horizontalScrollOffsetPx = applyHorizontalScrollDelta(
-                    offsetPx = horizontalScrollOffsetPx,
-                    deltaPx = delta,
-                    dayWidthPx = layout.dayWidthPx,
-                    firstVisibleDate = anchorDate,
-                    onFirstVisibleDateChange = { newDate ->
-                        if (newDate != anchorDate) {
-                            anchorGeneration++
-                        }
-                        anchorDate = newDate
-                        onFirstVisibleDateChange?.invoke(newDate)
-                    },
-                )
-            }
+            gestureScope.bindHorizontalScrollGestures(
+                dragStateProvider = { dragState },
+                dayWidthPx = derivedLayouts.layout.dayWidthPx,
+                anchorDateProvider = { anchorDate },
+                horizontalScrollOffsetProvider = { horizontalScrollOffsetPx },
+                onHorizontalScrollOffsetChange = { horizontalScrollOffsetPx = it },
+                onAnchorDateChange = { anchorDate = it },
+                onAnchorGenerationBump = { anchorGeneration++ },
+                onFirstVisibleDateChange = onFirstVisibleDateChange,
+            )
         }
 
         Column(
@@ -509,18 +386,18 @@ fun WeekView(
                 ),
         ) {
             WeekViewHeader(
-                layout = layout,
+                layout = derivedLayouts.layout,
                 style = style,
                 dateFormatter = dateFormatter,
                 horizontalTranslationPx = horizontalTranslationPx,
                 textMeasurer = headerTextMeasurer,
-                allDayEventChips = allDayEventChips,
-                allDayChipsByDate = allDayChipsByDate,
+                allDayEventChips = chipLayers.allDayEventChips,
+                allDayChipsByDate = chipLayers.allDayChipsByDate,
                 allDayTextMeasurer = allDayTextMeasurer,
                 allDayExpandProgress = expandProgress,
                 useExpandedAllDayLayout = useExpandedAllDayLayout,
-                allDayChipBoundsLayout = allDayChipBoundsLayout,
-                showAllDayToggle = showAllDayToggle,
+                allDayChipBoundsLayout = derivedLayouts.allDayChipBoundsLayout,
+                showAllDayToggle = derivedLayouts.showAllDayToggle,
                 onAllDayToggle = { allDayEventsExpanded = !allDayEventsExpanded },
                 onAllDayEventClick = if (eventClickEnabled) onEventClick else null,
             )
@@ -533,198 +410,64 @@ fun WeekView(
                     .background(style.backgroundColor)
                     .onSizeChanged { measuredGridViewportHeightPx = it.height.toFloat() },
             ) {
-                val layoutGridHeightPx = with(density) { layoutHeightPx(gridLayout.gridHeightPx) }
+                val layoutGridHeightPx = with(density) {
+                    layoutHeightPx(derivedLayouts.gridLayout.gridHeightPx)
+                }
                 val gridHeightDp = with(density) { layoutGridHeightPx.toDp() }
-                val displayGridLayout = if (abs(layoutGridHeightPx - gridLayout.gridHeightPx) < 0.5f) {
-                    gridLayout
-                } else {
-                    gridLayout.copy(
-                        hourHeightPx = layoutGridHeightPx / style.hoursCount,
-                        gridHeightPx = layoutGridHeightPx,
-                    )
-                }
+                val displayGridLayout = derivedLayouts.gridLayout
 
-                val dragGhostChip = remember(dragState, displayGridLayout, layoutConfig, density, style) {
-                    val state = dragState ?: return@remember null
-                    val dateIndex = displayGridLayout.dateIndex(state.currentStartTime.date)
-                    if (dateIndex < 0) {
-                        return@remember null
-                    }
-
-                    val dayStartX = displayGridLayout.dayStartX(dateIndex)
-                    val modifiedDayStartX = if (style.numberOfVisibleDays == 1) {
-                        dayStartX + style.singleDayHorizontalPaddingDp.toPx(density)
-                    } else {
-                        dayStartX
-                    }
-
-                    val calculator = EventChipBoundsCalculator(displayGridLayout, style, density)
-                    val bounds = calculator.calculateDraggedEvent(
-                        dayStartX = modifiedDayStartX,
-                        startTime = state.currentStartTime,
-                        durationInMinutes = state.durationInMinutes,
-                        layoutConfig = layoutConfig,
-                    )
-
-                    state.sourceChip.copy(
-                        startTime = state.currentStartTime,
-                        endTime = state.currentEndTime,
-                    ).apply {
-                        this.bounds = bounds
-                    }
-                }
+                val dragGhostChip = rememberDragGhostChip(
+                    dragState = dragState,
+                    displayGridLayout = displayGridLayout,
+                    layoutConfig = layoutConfig,
+                    style = style,
+                    density = density,
+                )
 
                 SideEffect {
-                    gestureScope.eventChips = eventChips
-                    gestureScope.horizontalTranslationPx = horizontalTranslationPx
-                    gestureScope.onEventClick = onEventClick ?: {}
-                    gestureScope.onDragStart = start@{ event, offset ->
-                        val chip = eventChips.firstOrNull { it.eventId == event.id } ?: return@start
-                        val dragStartTime = calculateTimeFromPoint(
-                            touchX = offset.x,
-                            touchY = offset.y,
-                            layout = displayGridLayout,
-                            style = style,
-                            horizontalTranslationPx = horizontalTranslationPx,
-                        ) ?: event.startTime
-                        dragState = WeekViewDragState(
-                            eventId = event.id,
-                            event = event,
-                            sourceChip = chip,
-                            draggedEventStartTime = event.startTime,
-                            dragStartTime = dragStartTime,
-                            currentStartTime = event.startTime,
-                            currentEndTime = event.endTime,
-                        )
-                    }
-                    gestureScope.onDragMove = move@{ offset ->
-                        val state = dragState ?: return@move
-                        val currentLocation = calculateTimeFromPoint(
-                            touchX = offset.x,
-                            touchY = offset.y,
-                            layout = displayGridLayout,
-                            style = style,
-                            horizontalTranslationPx = horizontalTranslationPx,
-                        ) ?: return@move
-
-                        val newStart = sanitizeEventStartToQuarterHour(
-                            calculateNewEventStart(state, currentLocation),
-                        )
-                        val (startTime, endTime) = eventTimesForDraggedStart(
-                            originalStartTime = state.draggedEventStartTime,
-                            originalEndTime = state.event.endTime,
-                            sanitizedStartTime = newStart,
-                        )
-                        dragState = state.copy(
-                            currentStartTime = startTime,
-                            currentEndTime = endTime,
-                        )
-                        dragScrollEdge = detectDragScrollEdge(
-                            touchXInCanvasPx = offset.x,
-                            touchYInCanvasPx = offset.y,
-                            gridScrollOffsetPx = gridScrollOffsetPx,
-                            gridViewportWidthPx = layout.viewportGridWidthPx,
-                            gridViewportHeightPx = gridViewportHeightPx,
-                        )
-                    }
-                    gestureScope.onDragEnd = {
-                        val state = dragState
-                        dragState = null
-                        dragScrollEdge = DragScrollEdge.None
-                        if (state != null) {
-                            onEventDrop?.invoke(
-                                state.event,
-                                state.currentStartTime,
-                                state.currentEndTime,
-                            )
-                        }
-                    }
-                    gestureScope.onDragCancel = {
-                        dragState = null
-                        dragScrollEdge = DragScrollEdge.None
-                    }
-                }
-
-                val gridScrollModifier = Modifier
-                    .weekViewGridScroll(scrollOffsetPx = { gridScrollOffsetPxState })
-                    .scrollable(
-                        state = gridScrollableState,
-                        orientation = Orientation.Vertical,
-                        enabled = !isPinchZoomActive,
-                    )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(gridHeightDp)
-                        .weekViewPinchZoom(
-                            enabled = style.pinchToZoomEnabled,
-                            gestureScope = gestureScope,
-                            zoomConfig = { pinchZoomConfigState },
-                            hourHeightPx = { hourHeightPxState },
-                            onPinchStart = onPinchStart,
-                            onPinchStep = onPinchStep,
-                            onPinchEnd = onPinchEnd,
-                        )
-                        .then(gridScrollModifier),
-                ) {
-                    WeekViewTimeColumn(
+                    gestureScope.bindEventDragGestures(
+                        eventChipsProvider = { chipLayers.eventChips },
+                        horizontalTranslationPxProvider = { horizontalTranslationPx },
+                        onEventClickHandler = onEventClick ?: {},
+                        dragStateProvider = { dragState },
+                        onDragStateChange = { dragState = it },
+                        onDragScrollEdgeChange = { dragScrollEdge = it },
+                        displayGridLayout = displayGridLayout,
                         style = style,
-                        hourHeightDp = hourHeightDp,
-                        gridHeightDp = gridHeightDp,
-                        timeFormatter = timeFormatter,
+                        gridScrollOffsetPxProvider = { gridScrollOffsetPx },
+                        gridViewportWidthPx = derivedLayouts.layout.viewportGridWidthPx,
+                        gridViewportHeightPx = gridViewportHeightPx,
+                        onEventDrop = onEventDrop,
                     )
-
-                    Box(
-                        modifier = Modifier
-                            .width(with(density) { layout.viewportGridWidthPx.toDp() })
-                            .height(gridHeightDp)
-                            .clipToBounds(),
-                    ) {
-                        Canvas(
-                            modifier = Modifier
-                                .width(with(density) { gridLayout.contentGridWidthPx.toDp() })
-                                .height(gridHeightDp)
-                                .weekViewTimedEventGestures(
-                                    clickEnabled = eventClickEnabled,
-                                    dragEnabled = eventDragEnabled,
-                                    gestureScope = gestureScope,
-                                ),
-                        ) {
-                            translate(left = horizontalTranslationPx) {
-                                drawWeekViewGrid(
-                                    layout = displayGridLayout,
-                                    style = style,
-                                    today = today,
-                                )
-
-                                displayGridLayout.renderDates.forEach { date ->
-                                    drawWeekViewEventChips(
-                                        eventChips = chipsByDate[date].orEmpty(),
-                                        layout = displayGridLayout,
-                                        style = style,
-                                        density = density,
-                                        textMeasurer = eventTextMeasurer,
-                                        draggingEventId = dragState?.eventId,
-                                        ghostChip = if (dragState?.currentStartTime?.date == date) {
-                                            dragGhostChip
-                                        } else {
-                                            null
-                                        },
-                                    )
-                                }
-
-                                if (style.showTimeColumnSeparator) {
-                                    drawLine(
-                                        color = style.timeColumnSeparatorColor,
-                                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
-                                        end = androidx.compose.ui.geometry.Offset(0f, size.height),
-                                        strokeWidth = style.daySeparatorWidthDp.toPx(),
-                                    )
-                                }
-                            }
-                        }
-                    }
                 }
+
+                WeekViewGridSection(
+                    style = style,
+                    gridLayout = derivedLayouts.gridLayout,
+                    displayGridLayout = displayGridLayout,
+                    layout = derivedLayouts.layout,
+                    density = density,
+                    today = today,
+                    hourHeightDp = hourHeightDp,
+                    gridHeightDp = gridHeightDp,
+                    horizontalTranslationPx = horizontalTranslationPx,
+                    chipsByDate = chipLayers.chipsByDate,
+                    dragState = dragState,
+                    dragGhostChip = dragGhostChip,
+                    eventTextMeasurer = eventTextMeasurer,
+                    timeFormatter = timeFormatter,
+                    gestureScope = gestureScope,
+                    eventClickEnabled = eventClickEnabled,
+                    eventDragEnabled = eventDragEnabled,
+                    gridScrollOffsetPx = { gridScrollOffsetPxState },
+                    gridScrollableState = gridScrollableState,
+                    isPinchZoomActive = isPinchZoomActive,
+                    pinchZoomConfig = { pinchZoomConfigState },
+                    hourHeightPx = { hourHeightPxState },
+                    onPinchStart = onPinchStart,
+                    onPinchStep = onPinchStep,
+                    onPinchEnd = onPinchEnd,
+                )
             }
         }
     }

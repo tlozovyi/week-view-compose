@@ -21,7 +21,15 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 
 /**
- * Optional per-event styling overrides for [WeekViewEvent].
+ * Optional visual overrides for a single [WeekViewEvent].
+ *
+ * Any property left `null` inherits the matching default from [WeekViewStyle].
+ *
+ * @property backgroundColor Fill color of the chip background.
+ * @property textColor Color of the event title text.
+ * @property borderColor Stroke color when [borderWidthDp] is set.
+ * @property borderWidthDp Stroke width; no border when `null` or zero.
+ * @property cornerRadiusDp Corner radius of the rounded rectangle.
  */
 @PublicApi
 data class WeekViewEventStyle(

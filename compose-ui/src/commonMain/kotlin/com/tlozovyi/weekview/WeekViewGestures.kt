@@ -60,7 +60,7 @@ internal fun Modifier.weekViewPinchZoom(
     gestureScope: WeekViewGestureScope,
     zoomConfig: () -> WeekViewPinchZoomConfig,
     hourHeightPx: () -> Float,
-    onPinchStart: (focalYInViewportPx: Float) -> Unit,
+    onPinchStart: (focalYInContentPx: Float) -> Unit,
     onPinchStep: (newHourHeightPx: Float) -> Unit,
     onPinchEnd: (newHourHeightPx: Float) -> Unit,
 ): Modifier {

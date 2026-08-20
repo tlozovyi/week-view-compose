@@ -17,7 +17,9 @@
 package com.tlozovyi.weekview
 
 /**
- * Marks declarations that are part of the public API.
+ * Marks declarations that are part of the stable public API of week-view-compose.
+ *
+ * Internal helpers and rendering details are not annotated and may change without notice.
  */
 @MustBeDocumented
 @Retention(AnnotationRetention.BINARY)
