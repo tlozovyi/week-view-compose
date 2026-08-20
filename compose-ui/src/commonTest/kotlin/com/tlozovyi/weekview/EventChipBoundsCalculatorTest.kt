@@ -31,9 +31,11 @@ class EventChipBoundsCalculatorTest {
         hourHeightDp = Dp(60f),
         eventMarginVerticalDp = Dp(0f),
         overlappingEventGapDp = Dp(0f),
+        columnGapDp = Dp(0f),
     )
 
     private val visibleDate = LocalDate(2026, 8, 20)
+
     private val layout = WeekViewLayout(
         viewportWidthPx = 400f,
         viewportHeightPx = 600f,
@@ -41,6 +43,7 @@ class EventChipBoundsCalculatorTest {
         headerHeightPx = 40f,
         hourHeightPx = 60f,
         dayWidthPx = 344f,
+        columnGapPx = 0f,
         viewportGridWidthPx = 344f,
         contentGridWidthPx = 344f,
         gridHeightPx = 1440f,
@@ -155,4 +158,62 @@ class EventChipBoundsCalculatorTest {
         assertTrue(bounds.left == 0f)
         assertTrue(bounds.right == 172f, "Expected half-day width but was ${bounds.right}")
     }
+
+    @Test
+    fun columnGapInsetsEventsFromDayColumnEdge() {
+        val gapStyle = style.copy(columnGapDp = Dp(8f))
+        val gapLayout = layout.copy(columnGapPx = 8f)
+        val date = LocalDate(2026, 8, 20)
+        val timedChip = EventChip(
+            event = ResolvedWeekViewEntity.Event<WeekViewEvent>(
+                id = 1,
+                title = "Timed",
+                startTime = date.atTime(9, 0),
+                endTime = date.atTime(10, 0),
+                subtitle = null,
+                isAllDay = false,
+                style = ResolvedWeekViewEntity.Style(),
+                data = null,
+            ),
+            index = 0,
+            startTime = date.atTime(9, 0),
+            endTime = date.atTime(10, 0),
+        ).apply {
+            relativeStart = 0f
+            relativeWidth = 1f
+            minutesFromStartHour = 9 * 60
+        }
+        val allDayChip = EventChip(
+            event = ResolvedWeekViewEntity.Event<WeekViewEvent>(
+                id = 2,
+                title = "All day",
+                startTime = date.atTime(0, 0),
+                endTime = date.plusDays(1).atTime(0, 0),
+                subtitle = null,
+                isAllDay = true,
+                style = ResolvedWeekViewEntity.Style(),
+                data = null,
+            ),
+            index = 0,
+            startTime = date.atTime(0, 0),
+            endTime = date.plusDays(1).atTime(0, 0),
+        ).apply {
+            relativeStart = 0f
+            relativeWidth = 1f
+        }
+
+        val calculator = EventChipBoundsCalculator(gapLayout, gapStyle, density)
+        val timedBounds = calculator.calculateSingleEvent(timedChip, dayStartX = 0f)
+        val allDayBounds = calculator.calculateAllDayEvent(
+            rowIndex = 0,
+            eventChip = allDayChip,
+            dayStartX = 0f,
+        )
+
+        assertTrue(timedBounds.right == 336f, "Timed event right was ${timedBounds.right}")
+        assertTrue(allDayBounds.right == 336f, "All-day event right was ${allDayBounds.right}")
+    }
 }
+
+private fun LocalDate.plusDays(days: Int): LocalDate =
+    LocalDate.fromEpochDays(toEpochDays() + days)

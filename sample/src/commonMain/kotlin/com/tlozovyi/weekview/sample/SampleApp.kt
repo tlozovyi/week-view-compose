@@ -175,6 +175,46 @@ private fun sampleEvents(today: LocalDate): List<WeekViewEvent> {
             endTime = today.atTime(18, 0),
             style = WeekViewEventStyle(backgroundColor = Color(0xFFBA68C8)),
         ),
+        WeekViewEvent(
+            id = 101,
+            title = "Sprint demo",
+            startTime = today.atTime(0, 0),
+            endTime = today.plusDays(1).atTime(0, 0),
+            isAllDay = true,
+            style = WeekViewEventStyle(backgroundColor = Color(0xFFEF5350)),
+        ),
+        WeekViewEvent(
+            id = 102,
+            title = "Focus day",
+            startTime = today.atTime(0, 0),
+            endTime = today.plusDays(1).atTime(0, 0),
+            isAllDay = true,
+            style = WeekViewEventStyle(backgroundColor = Color(0xFF26A69A)),
+        ),
+        WeekViewEvent(
+            id = 104,
+            title = "Company offsite",
+            startTime = today.atTime(0, 0),
+            endTime = today.plusDays(1).atTime(0, 0),
+            isAllDay = true,
+            style = WeekViewEventStyle(backgroundColor = Color(0xFFAB47BC)),
+        ),
+        WeekViewEvent(
+            id = 105,
+            title = "Submit expenses",
+            startTime = today.atTime(0, 0),
+            endTime = today.plusDays(1).atTime(0, 0),
+            isAllDay = true,
+            style = WeekViewEventStyle(backgroundColor = Color(0xFFFFCA28)),
+        ),
+        WeekViewEvent(
+            id = 106,
+            title = "Birthday",
+            startTime = today.atTime(0, 0),
+            endTime = today.plusDays(1).atTime(0, 0),
+            isAllDay = true,
+            style = WeekViewEventStyle(backgroundColor = Color(0xFFEC407A)),
+        ),
 
         // Tomorrow
         WeekViewEvent(
@@ -211,6 +251,14 @@ private fun sampleEvents(today: LocalDate): List<WeekViewEvent> {
             startTime = tomorrow.atTime(16, 30),
             endTime = tomorrow.atTime(17, 30),
             style = WeekViewEventStyle(backgroundColor = Color(0xFFE57373)),
+        ),
+        WeekViewEvent(
+            id = 103,
+            title = "Conference",
+            startTime = tomorrow.atTime(0, 0),
+            endTime = dayAfterTomorrow.plusDays(1).atTime(0, 0),
+            isAllDay = true,
+            style = WeekViewEventStyle(backgroundColor = Color(0xFF5C6BC0)),
         ),
 
         // Day after tomorrow

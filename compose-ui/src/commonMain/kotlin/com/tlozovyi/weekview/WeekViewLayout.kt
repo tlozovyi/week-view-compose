@@ -25,8 +25,13 @@ internal data class WeekViewLayout(
     val viewportHeightPx: Float,
     val timeColumnWidthPx: Float,
     val headerHeightPx: Float,
+    val dateLabelHeightPx: Float = headerHeightPx,
+    val allDaySectionHeightPx: Float = 0f,
+    val allDayChipHeightPx: Float = 0f,
+    val maxAllDayRowsPerDay: Int = 0,
     val hourHeightPx: Float,
     val dayWidthPx: Float,
+    val columnGapPx: Float,
     val viewportGridWidthPx: Float,
     val contentGridWidthPx: Float,
     val gridHeightPx: Float,
@@ -37,6 +42,10 @@ internal data class WeekViewLayout(
     /** @deprecated Use [viewportGridWidthPx] for the clipped viewport width. */
     val gridWidthPx: Float
         get() = viewportGridWidthPx
+
+    /** Width available for event chips within a day column (excludes [columnGapPx]). */
+    val drawableDayWidthPx: Float
+        get() = (dayWidthPx - columnGapPx).coerceAtLeast(0f)
 
     fun dayStartX(dayIndex: Int): Float = dayIndex * dayWidthPx
 
@@ -58,6 +67,7 @@ internal fun calculateWeekViewLayout(
     val hourHeightPx = with(density) { style.hourHeightDp.toPx() }
     val viewportGridWidthPx = (viewportWidthPx - timeColumnWidthPx).coerceAtLeast(0f)
     val dayWidthPx = viewportGridWidthPx / style.numberOfVisibleDays
+    val columnGapPx = with(density) { style.columnGapDp.toPx() }
     val gridHeightPx = style.hoursCount * hourHeightPx
     val scrollBufferDays = if (horizontalScrollingEnabled) HORIZONTAL_SCROLL_BUFFER_DAYS else 0
     val visibleDates = buildList {
@@ -79,6 +89,7 @@ internal fun calculateWeekViewLayout(
         headerHeightPx = headerHeightPx,
         hourHeightPx = hourHeightPx,
         dayWidthPx = dayWidthPx,
+        columnGapPx = columnGapPx,
         viewportGridWidthPx = viewportGridWidthPx,
         contentGridWidthPx = contentGridWidthPx,
         gridHeightPx = gridHeightPx,

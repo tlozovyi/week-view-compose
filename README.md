@@ -2,7 +2,7 @@
 
 Compose Multiplatform calendar week view for Android and iOS.
 
-**Status:** `0.4.0-alpha` — calendar grid, event chips, tap handling, and continuous horizontal scroll.
+**Status:** `0.5.0-alpha` — calendar grid, event chips, tap handling, continuous horizontal scroll, and all-day events in the header.
 
 ## Acknowledgements
 
@@ -57,12 +57,21 @@ WeekView(
             startTime = LocalDate(2026, 8, 20).atTime(9, 0),
             endTime = LocalDate(2026, 8, 20).atTime(10, 0),
         ),
+        WeekViewEvent(
+            id = 2,
+            title = "Holiday",
+            startTime = LocalDate(2026, 8, 20).atTime(0, 0),
+            endTime = LocalDate(2026, 8, 20).atTime(23, 59),
+            isAllDay = true,
+        ),
     ),
     style = WeekViewStyle(numberOfVisibleDays = 3, minHour = 7, maxHour = 22),
     onFirstVisibleDateChange = { firstVisibleDate = it },
     onEventClick = { event -> /* handle tap */ },
 )
 ```
+
+All-day events (`isAllDay = true`) render as chips in the header row below the date labels. When a day has more than two all-day events, the header collapses to one chip plus a `+N` label; tap the arrow in the time column to expand or collapse.
 
 ## Versioning
 

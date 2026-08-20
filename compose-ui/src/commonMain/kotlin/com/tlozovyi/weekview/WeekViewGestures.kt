@@ -83,6 +83,47 @@ internal fun Modifier.weekViewScrollGestures(
     }
 }
 
+internal fun Modifier.weekViewAllDayToggleClick(
+    enabled: Boolean,
+    toggleAreaTopPx: Float,
+    onToggle: () -> Unit,
+): Modifier {
+    if (!enabled) {
+        return this
+    }
+
+    return pointerInput(toggleAreaTopPx) {
+        detectTapGestures { offset ->
+            if (offset.y >= toggleAreaTopPx) {
+                onToggle()
+            }
+        }
+    }
+}
+
+internal fun Modifier.weekViewAllDayEventClick(
+    enabled: Boolean,
+    eventChips: List<EventChip>,
+    horizontalTranslationPx: Float,
+    onEventClick: (WeekViewEvent) -> Unit,
+): Modifier {
+    if (!enabled) {
+        return this
+    }
+
+    return pointerInput(eventChips, horizontalTranslationPx) {
+        detectTapGestures { offset ->
+            val event = eventChips.findAllDayEventAt(
+                x = offset.x - horizontalTranslationPx,
+                y = offset.y,
+            )
+            if (event != null) {
+                onEventClick(event)
+            }
+        }
+    }
+}
+
 internal fun Modifier.weekViewEventClick(
     enabled: Boolean,
     eventChips: List<EventChip>,

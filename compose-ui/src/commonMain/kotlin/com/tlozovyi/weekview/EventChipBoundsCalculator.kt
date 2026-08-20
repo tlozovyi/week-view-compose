@@ -33,7 +33,7 @@ internal class EventChipBoundsCalculator(
     private val hourHeightPx = layout.hourHeightPx
     private val hoursPerDay = style.hoursCount
     private val minutesPerDay = hoursPerDay * 60
-    private val drawableDayWidth = layout.dayWidthPx
+    private val drawableDayWidth = layout.drawableDayWidthPx
     private val overlappingEventGapPx = style.overlappingEventGapDp.toPx(density)
     private val eventMarginVerticalPx = style.eventMarginVerticalDp.toPx(density)
     private val singleDayHorizontalPaddingPx = style.singleDayHorizontalPaddingDp.toPx(density)
@@ -75,6 +75,60 @@ internal class EventChipBoundsCalculator(
         return ChipBounds(left = left, top = top, right = right, bottom = bottom)
     }
 
+    fun calculateAllDayEvent(
+        rowIndex: Int,
+        eventChip: EventChip,
+        dayStartX: Float,
+    ): ChipBounds {
+        val headerPaddingPx = style.headerPaddingDp.toPx(density)
+        val chipHeightPx = layout.allDayChipHeightPx
+        val eventMarginVerticalPx = style.eventMarginVerticalDp.toPx(density)
+        val arrangeVertically = style.arrangeAllDayEventsVertically
+
+        val top = if (arrangeVertically) {
+            layout.dateLabelHeightPx + headerPaddingPx +
+                rowIndex * (chipHeightPx + eventMarginVerticalPx)
+        } else {
+            layout.dateLabelHeightPx + headerPaddingPx
+        }
+
+        var left = if (arrangeVertically) {
+            dayStartX
+        } else {
+            dayStartX + eventChip.relativeStart * drawableDayWidth
+        }
+
+        var right = if (arrangeVertically) {
+            left + drawableDayWidth
+        } else {
+            left + eventChip.relativeWidth * drawableDayWidth
+        }
+
+        val isLeftMostColumn = left == dayStartX
+        val isRightMostColumn = right == dayStartX + drawableDayWidth
+
+        if (!isLeftMostColumn) {
+            left += overlappingEventGapPx / 2f
+        }
+
+        if (!isRightMostColumn) {
+            right -= overlappingEventGapPx / 2f
+        }
+
+        val bottom = top + chipHeightPx
+
+        if (isSingleDay && isRightMostColumn) {
+            return ChipBounds(
+                left = left,
+                top = top,
+                right = right - singleDayHorizontalPaddingPx * 2f,
+                bottom = bottom,
+            )
+        }
+
+        return ChipBounds(left = left, top = top, right = right, bottom = bottom)
+    }
+
     private fun calculateDistanceFromTop(minutesFromStart: Int): Float {
         val portionOfDay = minutesFromStart.toFloat() / minutesPerDay
         return hourHeightPx * hoursPerDay * portionOfDay
@@ -83,6 +137,10 @@ internal class EventChipBoundsCalculator(
 
 internal fun ChipBounds.isValid(gridWidthPx: Float, gridHeightPx: Float): Boolean {
     return right > 0f && left < gridWidthPx && bottom > 0f && top < gridHeightPx
+}
+
+internal fun ChipBounds.isValidHorizontally(contentWidthPx: Float): Boolean {
+    return right > 0f && left < contentWidthPx
 }
 
 internal fun ChipBounds.width(): Float = right - left

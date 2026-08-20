@@ -16,6 +16,9 @@
 
 package com.tlozovyi.weekview
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -34,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -70,6 +74,7 @@ fun WeekView(
     val density = LocalDensity.current
     val headerTextMeasurer = rememberTextMeasurer(cacheSize = 16)
     val eventTextMeasurer = rememberTextMeasurer(cacheSize = 64)
+    val allDayTextMeasurer = rememberTextMeasurer(cacheSize = 32)
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
     val verticalScrollState = rememberScrollState()
     val layoutEngine = remember { WeekViewLayoutEngine() }
@@ -77,12 +82,19 @@ fun WeekView(
     val eventClickEnabled = onEventClick != null
     var anchorDate by remember { mutableStateOf(firstVisibleDate) }
     var horizontalScrollOffsetPx by remember { mutableFloatStateOf(0f) }
+    var allDayEventsExpanded by remember { mutableStateOf(false) }
+    var anchorGeneration by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(firstVisibleDate) {
         if (firstVisibleDate != anchorDate) {
             anchorDate = firstVisibleDate
             horizontalScrollOffsetPx = 0f
+            anchorGeneration++
         }
+    }
+
+    LaunchedEffect(anchorDate) {
+        allDayEventsExpanded = false
     }
 
     BoxWithConstraints(
@@ -90,7 +102,7 @@ fun WeekView(
             .fillMaxSize()
             .background(style.backgroundColor),
     ) {
-        val layout = remember(maxWidth, maxHeight, style, anchorDate, density, horizontalScrollingEnabled) {
+        val baseLayout = remember(maxWidth, maxHeight, style, anchorDate, density, horizontalScrollingEnabled) {
             calculateWeekViewLayout(
                 viewportWidthPx = with(density) { maxWidth.toPx() },
                 viewportHeightPx = with(density) { maxHeight.toPx() },
@@ -103,29 +115,130 @@ fun WeekView(
 
         val horizontalTranslationPx = horizontalContentTranslationPx(
             scrollOffsetPx = horizontalScrollOffsetPx,
-            dayWidthPx = layout.dayWidthPx,
-            scrollBufferDays = layout.scrollBufferDays,
+            dayWidthPx = baseLayout.dayWidthPx,
+            scrollBufferDays = baseLayout.scrollBufferDays,
         )
 
-        val eventDateRange = if (horizontalScrollingEnabled) layout.renderDates else layout.visibleDates
+        val eventDateRange = if (horizontalScrollingEnabled) baseLayout.renderDates else baseLayout.visibleDates
 
         val layoutConfig = remember(style) {
-            WeekViewLayoutConfig.of(minHour = style.minHour, maxHour = style.maxHour)
+            WeekViewLayoutConfig.of(
+                minHour = style.minHour,
+                maxHour = style.maxHour,
+                arrangeAllDayEventsVertically = style.arrangeAllDayEventsVertically,
+            )
         }
 
-        val eventChips = remember(events, eventDateRange, style, layoutConfig, density) {
+        val allEventChips = remember(events, eventDateRange, anchorGeneration, style, layoutConfig, density) {
             val resolvedEvents = events.toResolvedEntities(style, density, eventDateRange)
             layoutEngine.createEventChips(resolvedEvents, layoutConfig)
-                .filter { !it.event.isAllDay }
+        }
+
+        val eventChips = remember(allEventChips) {
+            allEventChips.filter { !it.event.isAllDay }
+        }
+
+        val allDayEventChips = remember(allEventChips) {
+            allEventChips.filter { it.event.isAllDay }
         }
 
         val chipsByDate = remember(eventChips) {
             eventChips.groupBy { it.startTime.date }
         }
 
+        val allDayChipsByDate = remember(allDayEventChips) {
+            allDayEventChips.groupBy { it.startTime.date }
+        }
+
+        val maxAllDayEventsPerDay = remember(allDayChipsByDate, baseLayout.renderDates) {
+            maxAllDayEventsPerDay(
+                allDayChipsByDate = allDayChipsByDate,
+                renderDates = baseLayout.renderDates,
+            )
+        }
+
+        val showAllDayToggle = remember(maxAllDayEventsPerDay, style.arrangeAllDayEventsVertically) {
+            showAllDayEventsToggleArrow(
+                maxAllDayEventsPerDay = maxAllDayEventsPerDay,
+                arrangeAllDayEventsVertically = style.arrangeAllDayEventsVertically,
+            )
+        }
+
+        val expandProgress by animateFloatAsState(
+            targetValue = if (allDayEventsExpanded) 1f else 0f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+            label = "allDayExpandProgress",
+        )
+
+        val useExpandedAllDayLayout = shouldUseExpandedAllDayLayout(
+            showAllDayToggle = showAllDayToggle,
+            allDayEventsExpanded = allDayEventsExpanded,
+            expandProgress = expandProgress,
+        )
+
+        val allDayBoundsLayout = remember(baseLayout, maxAllDayEventsPerDay, style, density) {
+            baseLayout.withAllDaySection(
+                maxAllDayEventsPerDay = maxAllDayEventsPerDay,
+                allDayEventsExpanded = true,
+                style = style,
+                density = density,
+            ).copy(contentGridWidthPx = baseLayout.renderDates.size * baseLayout.dayWidthPx)
+        }
+
+        val layout = remember(
+            baseLayout,
+            maxAllDayEventsPerDay,
+            expandProgress,
+            showAllDayToggle,
+            style,
+            density,
+        ) {
+            val allDayLayout = if (showAllDayToggle) {
+                baseLayout.withAnimatedAllDaySection(
+                    maxAllDayEventsPerDay = maxAllDayEventsPerDay,
+                    expandProgress = expandProgress,
+                    style = style,
+                    density = density,
+                )
+            } else {
+                baseLayout.withAllDaySection(
+                    maxAllDayEventsPerDay = maxAllDayEventsPerDay,
+                    allDayEventsExpanded = false,
+                    style = style,
+                    density = density,
+                )
+            }
+            allDayLayout.copy(contentGridWidthPx = baseLayout.renderDates.size * baseLayout.dayWidthPx)
+        }
+
         val gridLayout = remember(layout) {
             layout.copy(contentGridWidthPx = layout.renderDates.size * layout.dayWidthPx)
         }
+
+        val allDayChipBoundsLayout = if (showAllDayToggle) {
+            allDayBoundsLayout
+        } else {
+            layout
+        }
+
+        applyAllDayEventVisibility(
+            allDayEventChips = allDayEventChips,
+            allDayChipsByDate = allDayChipsByDate,
+            renderDates = layout.renderDates,
+            allDayEventsExpanded = useExpandedAllDayLayout,
+            arrangeAllDayEventsVertically = style.arrangeAllDayEventsVertically,
+        )
+        prepareAllDayEventChipBounds(
+            allDayEventChips = allDayEventChips,
+            layout = allDayChipBoundsLayout,
+            style = style,
+            density = density,
+            chipsByDate = allDayChipsByDate,
+            useExpandedAllDayLayout = useExpandedAllDayLayout,
+        )
 
         SideEffect {
             prepareEventChipBounds(
@@ -164,6 +277,9 @@ fun WeekView(
                             dayWidthPx = layout.dayWidthPx,
                             firstVisibleDate = anchorDate,
                             onFirstVisibleDateChange = { newDate ->
+                                if (newDate != anchorDate) {
+                                    anchorGeneration++
+                                }
                                 anchorDate = newDate
                                 onFirstVisibleDateChange?.invoke(newDate)
                             },
@@ -177,6 +293,15 @@ fun WeekView(
                 dateFormatter = dateFormatter,
                 horizontalTranslationPx = horizontalTranslationPx,
                 textMeasurer = headerTextMeasurer,
+                allDayEventChips = allDayEventChips,
+                allDayChipsByDate = allDayChipsByDate,
+                allDayTextMeasurer = allDayTextMeasurer,
+                allDayExpandProgress = expandProgress,
+                useExpandedAllDayLayout = useExpandedAllDayLayout,
+                allDayChipBoundsLayout = allDayChipBoundsLayout,
+                showAllDayToggle = showAllDayToggle,
+                onAllDayToggle = { allDayEventsExpanded = !allDayEventsExpanded },
+                onAllDayEventClick = if (eventClickEnabled) onEventClick else null,
             )
 
             Box(

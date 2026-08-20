@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.5.0-alpha
+
+MVP milestone — all-day events in the header row.
+
+### Added
+
+- All-day event chips rendered in the header row below date labels
+- Dynamic header height based on the maximum number of all-day events per day
+- Vertical and horizontal all-day arrangement via `arrangeAllDayEventsVertically` on `WeekViewStyle`
+- All-day styling knobs: `headerPaddingDp`, `allDayEventTextSizeSp`, `allDayEventPaddingVerticalDp`
+- All-day expand/collapse when more than two events overlap on a day (`+N` label, toggle arrow in time column, animated header height)
+- Click handling for all-day events in the header
+- Sample all-day events (single-day and multi-day)
+- Unit tests for all-day header layout and chip bounds
+
+### Not yet implemented
+
+- Pinch-to-zoom hour height
+- Drag-and-drop event editing
+- Accessibility
+
 ## 0.4.0-alpha
 
 Basic gesture and interaction support.

@@ -30,13 +30,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.number
 
@@ -47,11 +46,20 @@ internal fun WeekViewHeader(
     dateFormatter: DateFormatter,
     horizontalTranslationPx: Float,
     textMeasurer: TextMeasurer,
+    allDayEventChips: List<EventChip>,
+    allDayChipsByDate: Map<kotlinx.datetime.LocalDate, List<EventChip>>,
+    allDayTextMeasurer: TextMeasurer,
+    allDayExpandProgress: Float,
+    useExpandedAllDayLayout: Boolean,
+    allDayChipBoundsLayout: WeekViewLayout,
+    showAllDayToggle: Boolean,
+    onAllDayToggle: () -> Unit,
+    onAllDayEventClick: ((WeekViewEvent) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
-    val paddingHorizontalPx = with(density) { 4.dp.toPx() }
-    val textStyle = TextStyle(
+    val paddingHorizontalPx = with(density) { style.headerPaddingDp.toPx() }
+    val dateLabelTextStyle = TextStyle(
         color = style.headerTextColor,
         fontSize = 12.sp,
     )
@@ -75,7 +83,7 @@ internal fun WeekViewHeader(
             } else {
                 textMeasurer.measure(
                     text = label,
-                    style = textStyle,
+                    style = dateLabelTextStyle,
                     maxLines = 2,
                     constraints = Constraints(
                         maxWidth = columnWidth.toInt(),
@@ -88,15 +96,30 @@ internal fun WeekViewHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(style.headerHeightDp)
+            .height(with(density) { layout.headerHeightPx.toDp() })
             .background(style.headerBackgroundColor),
     ) {
         Box(
             modifier = Modifier
                 .width(style.timeColumnWidthDp)
                 .fillMaxHeight()
-                .background(style.timeColumnBackgroundColor),
-        )
+                .background(style.timeColumnBackgroundColor)
+                .weekViewAllDayToggleClick(
+                    enabled = showAllDayToggle,
+                    toggleAreaTopPx = layout.dateLabelHeightPx,
+                    onToggle = onAllDayToggle,
+                ),
+        ) {
+            if (showAllDayToggle) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    drawAllDayToggleArrow(
+                        layout = layout,
+                        style = style,
+                        allDayExpandProgress = allDayExpandProgress,
+                    )
+                }
+            }
+        }
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -104,44 +127,44 @@ internal fun WeekViewHeader(
                 .clipToBounds(),
         ) {
             Canvas(
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                val viewportWidthPx = size.width
-                measuredLabels.forEachIndexed { index, textLayoutResult ->
-                    if (textLayoutResult == null) {
-                        return@forEachIndexed
-                    }
-
-                    val (screenLeft, screenRight) = dayColumnScreenBounds(
-                        columnIndex = index,
-                        dayWidthPx = layout.dayWidthPx,
+                modifier = Modifier
+                    .width(with(density) { layout.contentGridWidthPx.toDp() })
+                    .height(with(density) { layout.headerHeightPx.toDp() })
+                    .weekViewAllDayEventClick(
+                        enabled = onAllDayEventClick != null,
+                        eventChips = allDayEventChips,
                         horizontalTranslationPx = horizontalTranslationPx,
+                        onEventClick = onAllDayEventClick ?: {},
+                    ),
+            ) {
+                translate(left = horizontalTranslationPx) {
+                    drawWeekViewAllDayEventChips(
+                        style = style,
+                        density = density,
+                        textMeasurer = allDayTextMeasurer,
+                        boundsLayout = allDayChipBoundsLayout,
+                        headerLayout = layout,
+                        renderDates = layout.renderDates,
+                        allDayChipsByDate = allDayChipsByDate,
+                        allDayExpandProgress = allDayExpandProgress,
+                        useExpandedAllDayLayout = useExpandedAllDayLayout,
                     )
-                    if (!isDayColumnVisibleOnScreen(
-                            screenLeft = screenLeft,
-                            screenRight = screenRight,
-                            viewportWidthPx = viewportWidthPx,
+
+                    measuredLabels.forEachIndexed { index, textLayoutResult ->
+                        if (textLayoutResult == null) {
+                            return@forEachIndexed
+                        }
+
+                        val columnLeft = layout.dayStartX(index)
+                        val columnRight = columnLeft + layout.dayWidthPx
+                        val textX = headerLabelCenteredScreenX(
+                            screenLeft = columnLeft,
+                            screenRight = columnRight,
+                            textWidth = textLayoutResult.size.width.toFloat(),
+                            paddingHorizontalPx = paddingHorizontalPx,
                         )
-                    ) {
-                        return@forEachIndexed
-                    }
+                        val textY = (layout.dateLabelHeightPx - textLayoutResult.size.height) / 2f
 
-                    val textX = headerLabelCenteredScreenX(
-                        screenLeft = screenLeft,
-                        screenRight = screenRight,
-                        textWidth = textLayoutResult.size.width.toFloat(),
-                        paddingHorizontalPx = paddingHorizontalPx,
-                    )
-                    val textY = (size.height - textLayoutResult.size.height) / 2f
-                    val clipLeft = maxOf(screenLeft, 0f)
-                    val clipRight = minOf(screenRight, viewportWidthPx)
-
-                    clipRect(
-                        left = clipLeft,
-                        top = 0f,
-                        right = clipRight,
-                        bottom = size.height,
-                    ) {
                         drawText(
                             textLayoutResult = textLayoutResult,
                             topLeft = Offset(

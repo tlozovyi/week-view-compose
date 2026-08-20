@@ -34,8 +34,16 @@ data class WeekViewLayoutConfig(
 
     @PublicApi
     companion object {
-        fun of(minHour: Int, maxHour: Int): WeekViewLayoutConfig {
-            return WeekViewLayoutConfig(minHour = minHour, maxHour = maxHour)
+        fun of(
+            minHour: Int,
+            maxHour: Int,
+            arrangeAllDayEventsVertically: Boolean = false,
+        ): WeekViewLayoutConfig {
+            return WeekViewLayoutConfig(
+                minHour = minHour,
+                maxHour = maxHour,
+                arrangeAllDayEventsVertically = arrangeAllDayEventsVertically,
+            )
         }
     }
 }

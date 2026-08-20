@@ -35,12 +35,60 @@ internal fun prepareEventChipBounds(
     }
 }
 
+internal fun prepareAllDayEventChipBounds(
+    allDayEventChips: List<EventChip>,
+    layout: WeekViewLayout,
+    style: WeekViewStyle,
+    density: Density,
+    chipsByDate: Map<LocalDate, List<EventChip>>,
+    useExpandedAllDayLayout: Boolean,
+) {
+    allDayEventChips.forEach { it.bounds.setEmpty() }
+
+    val calculator = EventChipBoundsCalculator(layout, style, density)
+
+    layout.renderDates.forEachIndexed { dateIndex, date ->
+        val dayStartX = layout.dayStartX(dateIndex)
+        val modifiedDayStartX = if (style.numberOfVisibleDays == 1) {
+            dayStartX + style.singleDayHorizontalPaddingDp.toPx(density)
+        } else {
+            dayStartX
+        }
+        visibleAllDayChipsForDate(
+            chips = chipsByDate[date].orEmpty(),
+            useExpandedAllDayLayout = useExpandedAllDayLayout,
+            arrangeAllDayEventsVertically = style.arrangeAllDayEventsVertically,
+        ).forEachIndexed { rowIndex, eventChip ->
+            eventChip.bounds = calculator.calculateAllDayEvent(
+                rowIndex = rowIndex,
+                eventChip = eventChip,
+                dayStartX = modifiedDayStartX,
+            )
+        }
+    }
+}
+
 internal fun EventChip.toWeekViewEvent(): WeekViewEvent? {
     val entity = event as? ResolvedWeekViewEntity.Event<*> ?: return null
     return entity.data as? WeekViewEvent
 }
 
 internal fun List<EventChip>.findEventAt(x: Float, y: Float): WeekViewEvent? {
+    return asReversed().firstNotNullOfOrNull { chip ->
+        if (chip.isHidden || chip.bounds.isEmpty()) {
+            null
+        } else if (chip.bounds.isHit(x, y)) {
+            chip.toWeekViewEvent()
+        } else {
+            null
+        }
+    }
+}
+
+internal fun List<EventChip>.findAllDayEventAt(
+    x: Float,
+    y: Float,
+): WeekViewEvent? {
     return asReversed().firstNotNullOfOrNull { chip ->
         if (chip.isHidden || chip.bounds.isEmpty()) {
             null
