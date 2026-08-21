@@ -56,6 +56,7 @@ import kotlinx.datetime.todayIn
  *
  * @param events Timed and all-day events to display. The caller owns the list and should update it
  *   when [onEventDrop] returns new times.
+ * @param blockedTimes Non-interactive time ranges drawn behind events on the day grid.
  * @param modifier Layout modifier for the outer container.
  * @param style Visual configuration ([WeekViewStyle.Default] when omitted).
  * @param firstVisibleDate First day column shown at the left edge of the viewport.
@@ -63,6 +64,12 @@ import kotlinx.datetime.todayIn
  *   Required for horizontal scrolling; when `null`, [WeekViewStyle.horizontalScrollingEnabled] has
  *   no effect.
  * @param onEventClick Called when the user taps a timed or all-day event chip.
+ * @param onEventLongClick Called when the user long-presses a timed event chip. Return `true` to
+ *   consume the gesture and prevent drag-and-drop; return `false` to allow drag when
+ *   [onEventDrop] is set.
+ * @param onEmptyViewClick Called when the user taps an empty area of the day grid (including over
+ *   blocked time ranges).
+ * @param onEmptyViewLongClick Called when the user long-presses an empty grid area.
  * @param onEventDrop Called when the user finishes dragging a timed event. Receives the event and
  *   its snapped start/end times. Requires [WeekViewStyle.dragAndDropEnabled].
  * @param dateFormatter Formats date labels in the header row.
@@ -73,10 +80,14 @@ import kotlinx.datetime.todayIn
 fun WeekView(
     events: List<WeekViewEvent>,
     modifier: Modifier = Modifier,
+    blockedTimes: List<WeekViewBlockedTime> = emptyList(),
     style: WeekViewStyle = WeekViewStyle.Default,
     firstVisibleDate: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
     onFirstVisibleDateChange: ((LocalDate) -> Unit)? = null,
     onEventClick: ((WeekViewEvent) -> Unit)? = null,
+    onEventLongClick: ((WeekViewEvent) -> Boolean)? = null,
+    onEmptyViewClick: ((LocalDateTime) -> Unit)? = null,
+    onEmptyViewLongClick: ((LocalDateTime) -> Unit)? = null,
     onEventDrop: ((WeekViewEvent, LocalDateTime, LocalDateTime) -> Unit)? = null,
     dateFormatter: DateFormatter = { year, month, day, dayOfWeek ->
         defaultDateFormatter(year, month, day, dayOfWeek, style.numberOfVisibleDays)
@@ -93,7 +104,11 @@ fun WeekView(
 
     val horizontalScrollingEnabled = style.horizontalScrollingEnabled && onFirstVisibleDateChange != null
     val eventClickEnabled = onEventClick != null
+    val gridTapEnabled = eventClickEnabled || onEmptyViewClick != null
+    val gridLongPressEnabled = onEmptyViewLongClick != null || onEventLongClick != null ||
+        (style.dragAndDropEnabled && onEventDrop != null)
     val eventDragEnabled = style.dragAndDropEnabled && onEventDrop != null
+    val gridGesturesEnabled = gridTapEnabled || gridLongPressEnabled
     val horizontalScrollSnapState = rememberWeekViewHorizontalScrollSnapState()
 
     var pageOriginDate by remember {
@@ -223,6 +238,7 @@ fun WeekView(
 
         val chipLayers = rememberWeekViewChipLayers(
             events = events,
+            blockedTimes = blockedTimes,
             eventDateRange = eventDateRange,
             anchorGeneration = anchorGeneration,
             style = style,
@@ -486,12 +502,18 @@ fun WeekView(
                     gestureScope.bindEventDragGestures(
                         eventChipsProvider = { chipLayers.eventChips },
                         horizontalTranslationPxProvider = { horizontalTranslationPx },
-                        onEventClickHandler = onEventClick ?: {},
+                        displayGridLayoutProvider = { displayGridLayout },
+                        styleProvider = { style },
+                        tapEnabled = gridTapEnabled,
+                        longPressEnabled = gridLongPressEnabled,
+                        dragEnabled = eventDragEnabled,
+                        onEventClick = onEventClick,
+                        onEmptyViewClick = onEmptyViewClick,
+                        onEmptyViewLongClick = onEmptyViewLongClick,
+                        onEventLongClick = onEventLongClick,
                         dragStateProvider = { dragState },
                         onDragStateChange = { dragState = it },
                         onDragScrollEdgeChange = { dragScrollEdge = it },
-                        displayGridLayout = displayGridLayout,
-                        style = style,
                         gridScrollOffsetPxProvider = { gridScrollOffsetPx },
                         gridViewportWidthPx = derivedLayouts.layout.viewportGridWidthPx,
                         gridViewportHeightPx = gridViewportHeightPx,
@@ -515,8 +537,7 @@ fun WeekView(
                     eventTextMeasurer = eventTextMeasurer,
                     timeFormatter = timeFormatter,
                     gestureScope = gestureScope,
-                    eventClickEnabled = eventClickEnabled,
-                    eventDragEnabled = eventDragEnabled,
+                    gridGesturesEnabled = gridGesturesEnabled,
                     gridScrollOffsetPx = { gridScrollOffsetPxState },
                     gridScrollableState = gridScrollableState,
                     isPinchZoomActive = isPinchZoomActive,

@@ -99,12 +99,18 @@ internal fun WeekViewGestureScope.bindHorizontalScrollGestures(
 internal fun WeekViewGestureScope.bindEventDragGestures(
     eventChipsProvider: () -> List<EventChip>,
     horizontalTranslationPxProvider: () -> Float,
-    onEventClickHandler: (WeekViewEvent) -> Unit,
+    displayGridLayoutProvider: () -> WeekViewLayout,
+    styleProvider: () -> WeekViewStyle,
+    tapEnabled: Boolean,
+    longPressEnabled: Boolean,
+    dragEnabled: Boolean,
+    onEventClick: ((WeekViewEvent) -> Unit)?,
+    onEmptyViewClick: ((kotlinx.datetime.LocalDateTime) -> Unit)?,
+    onEmptyViewLongClick: ((kotlinx.datetime.LocalDateTime) -> Unit)?,
+    onEventLongClick: ((WeekViewEvent) -> Boolean)?,
     dragStateProvider: () -> WeekViewDragState?,
     onDragStateChange: (WeekViewDragState?) -> Unit,
     onDragScrollEdgeChange: (DragScrollEdge) -> Unit,
-    displayGridLayout: WeekViewLayout,
-    style: WeekViewStyle,
     gridScrollOffsetPxProvider: () -> Float,
     gridViewportWidthPx: Float,
     gridViewportHeightPx: Float,
@@ -112,15 +118,24 @@ internal fun WeekViewGestureScope.bindEventDragGestures(
 ) {
     eventChips = eventChipsProvider()
     horizontalTranslationPx = horizontalTranslationPxProvider()
-    onEventClick = onEventClickHandler
+    displayGridLayout = displayGridLayoutProvider()
+    style = styleProvider()
+    this.tapEnabled = tapEnabled
+    this.longPressEnabled = longPressEnabled
+    this.dragEnabled = dragEnabled
+    this.onEventClick = onEventClick
+    this.onEmptyViewClick = onEmptyViewClick
+    this.onEmptyViewLongClick = onEmptyViewLongClick
+    this.onEventLongClick = onEventLongClick
     onDragStart = start@{ event, offset ->
         val chips = eventChipsProvider()
         val chip = chips.firstOrNull { it.eventId == event.id } ?: return@start
+        val layout = displayGridLayoutProvider()
         val dragStartTime = calculateTimeFromPoint(
             touchX = offset.x,
             touchY = offset.y,
-            layout = displayGridLayout,
-            style = style,
+            layout = layout,
+            style = styleProvider(),
             horizontalTranslationPx = horizontalTranslationPxProvider(),
         ) ?: event.startTime
         onDragStateChange(
@@ -140,8 +155,8 @@ internal fun WeekViewGestureScope.bindEventDragGestures(
         val currentLocation = calculateTimeFromPoint(
             touchX = offset.x,
             touchY = offset.y,
-            layout = displayGridLayout,
-            style = style,
+            layout = displayGridLayoutProvider(),
+            style = styleProvider(),
             horizontalTranslationPx = horizontalTranslationPxProvider(),
         ) ?: return@move
 

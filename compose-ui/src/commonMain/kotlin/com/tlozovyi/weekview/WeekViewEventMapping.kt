@@ -24,20 +24,51 @@ internal fun List<WeekViewEvent>.toResolvedEntities(
     density: Density,
     visibleDates: List<LocalDate>,
 ): List<ResolvedWeekViewEntity> {
-    if (isEmpty() || visibleDates.isEmpty()) {
-        return emptyList()
+    return mapNotNull { event ->
+        event.toResolvedEntityIfVisible(style, density, visibleDates)
     }
+}
 
+internal fun List<WeekViewBlockedTime>.toResolvedBlockedEntities(
+    style: WeekViewStyle,
+    density: Density,
+    visibleDates: List<LocalDate>,
+): List<ResolvedWeekViewEntity> {
+    return mapNotNull { blockedTime ->
+        blockedTime.toResolvedEntityIfVisible(style, density, visibleDates)
+    }
+}
+
+private fun WeekViewEvent.toResolvedEntityIfVisible(
+    style: WeekViewStyle,
+    density: Density,
+    visibleDates: List<LocalDate>,
+): ResolvedWeekViewEntity.Event<WeekViewEvent>? {
+    if (visibleDates.isEmpty()) {
+        return null
+    }
     val firstVisibleDate = visibleDates.first()
     val lastVisibleDate = visibleDates.last()
-
-    return mapNotNull { event ->
-        if (event.endTime.date < firstVisibleDate || event.startTime.date > lastVisibleDate) {
-            null
-        } else {
-            event.toResolvedEntity(style, density)
-        }
+    if (endTime.date < firstVisibleDate || startTime.date > lastVisibleDate) {
+        return null
     }
+    return toResolvedEntity(style, density)
+}
+
+private fun WeekViewBlockedTime.toResolvedEntityIfVisible(
+    style: WeekViewStyle,
+    density: Density,
+    visibleDates: List<LocalDate>,
+): ResolvedWeekViewEntity.BlockedTime? {
+    if (visibleDates.isEmpty()) {
+        return null
+    }
+    val firstVisibleDate = visibleDates.first()
+    val lastVisibleDate = visibleDates.last()
+    if (endTime.date < firstVisibleDate || startTime.date > lastVisibleDate) {
+        return null
+    }
+    return toResolvedEntity(style, density)
 }
 
 internal fun WeekViewEvent.toResolvedEntity(
@@ -53,5 +84,19 @@ internal fun WeekViewEvent.toResolvedEntity(
         isAllDay = isAllDay,
         style = this.style.toEntityStyle(style, density),
         data = this,
+    )
+}
+
+internal fun WeekViewBlockedTime.toResolvedEntity(
+    style: WeekViewStyle,
+    density: Density,
+): ResolvedWeekViewEntity.BlockedTime {
+    return ResolvedWeekViewEntity.BlockedTime(
+        id = id,
+        title = title.orEmpty(),
+        subtitle = subtitle,
+        startTime = startTime,
+        endTime = endTime,
+        style = this.style.toBlockedTimeEntityStyle(style, density),
     )
 }

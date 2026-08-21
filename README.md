@@ -4,14 +4,16 @@
 
 Compose Multiplatform calendar week view for **Android** and **iOS**.
 
-**Status:** `0.9.0-beta` — calendar grid, event chips with adaptive text and subtitles, tap handling, continuous horizontal scroll with page snap, all-day events, pinch-to-zoom, and drag-and-drop.
+**Status:** `0.9.0-beta` — calendar grid, event chips with adaptive text and subtitles, blocked time ranges, tap/long-press on events and empty slots, continuous horizontal scroll with page snap, all-day events, pinch-to-zoom, and drag-and-drop.
 
 ## Features
 
 - Single-day and multi-day calendar views (1, 3, 7, or any custom column count)
 - Timed event chips with overlap layout; optional subtitle and adaptive text size
 - All-day events in the header row (vertical or horizontal arrangement)
-- Tap handling for timed and all-day events
+- Tap handling for timed and all-day events; empty-slot tap and long-press
+- Blocked time ranges (non-interactive; taps fall through to empty-slot callbacks)
+- Event long-press callback with optional drag-and-drop override
 - Continuous horizontal scrolling with optional page snap on finger release
 - Week-aligned 7-day mode via `firstDayOfWeek`
 - Free-scroll mode when `horizontalScrollSnapEnabled = false`
@@ -25,7 +27,6 @@ Compose Multiplatform calendar week view for **Android** and **iOS**.
 
 ### Not yet implemented
 
-- Blocked time ranges
 - Adapter / paging API
 - Emoji support in event titles
 - RTL layout
@@ -102,6 +103,29 @@ WeekView(
     firstVisibleDate = firstVisibleDate,
     onFirstVisibleDateChange = { firstVisibleDate = it },
     onEventClick = { event -> /* handle tap */ },
+    onEventLongClick = { event ->
+        /* return true to consume; false to allow drag when onEventDrop is set */
+        false
+    },
+    onEmptyViewClick = { time -> /* create event at time */ },
+    onEmptyViewLongClick = { time -> /* e.g. show create menu */ },
+)
+```
+
+### Blocked time
+
+```kotlin
+WeekView(
+    events = events,
+    blockedTimes = listOf(
+        WeekViewBlockedTime(
+            id = 100,
+            startTime = date.atTime(12, 0),
+            endTime = date.atTime(13, 0),
+            title = "Lunch break",
+        ),
+    ),
+    onEmptyViewClick = { time -> /* fires when tapping blocked ranges too */ },
 )
 ```
 

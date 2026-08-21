@@ -2,19 +2,28 @@
 
 ## 0.9.0-beta
 
-Event chip text parity with the View library.
+Event chip text parity, blocked time ranges, and grid interaction callbacks.
 
 ### Added
 
 - **`adaptiveEventTextSize`** on `WeekViewStyle` — shrinks chip labels until they fit (ported from View `TextFitter`)
 - **Subtitle rendering** on timed event chips (title + newline + subtitle) and all-day chips (title + space + subtitle)
+- **`WeekViewBlockedTime`** — non-interactive blocked ranges on the day grid (full column width, drawn behind events)
+- **`defaultBlockedTimeBackgroundColor`** / **`defaultBlockedTimeTextColor`** on `WeekViewStyle`
+- **`onEmptyViewClick(time)`** and **`onEmptyViewLongClick(time)`** for empty grid taps (including over blocked time)
+- **`onEventLongClick(event): Boolean`** — return `true` to consume long-press; return `false` to allow drag-and-drop
 - Multi-line trimming before font shrink, matching View library behavior
-- Unit tests for chip text composition (`WeekViewTextFitterTest`)
+- Unit tests for chip text composition, blocked-time bounds, and grid touch routing
 
 ### Changed
 
-- Sample app enables adaptive text by default; new **Fixed text size** mode compares with `adaptiveEventTextSize = false`
+- Sample app enables adaptive text by default; demonstrates blocked lunch break, empty-slot callbacks, and event long-press
 - Sample events include short overlapping slots and all-day subtitles to demonstrate text fitting
+- Timed grid gestures use a unified tap / long-press handler (fixes taps blocked when drag is enabled)
+
+### Fixed
+
+- Transparent event backgrounds no longer turn black when drag dimming is applied
 
 ## 0.8.0-beta3
 

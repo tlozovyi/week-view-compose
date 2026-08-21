@@ -32,7 +32,15 @@ internal class WeekViewGestureScope {
     var isPinchBlocked: () -> Boolean = { false }
     var eventChips: List<EventChip> = emptyList()
     var horizontalTranslationPx: Float = 0f
-    var onEventClick: (WeekViewEvent) -> Unit = {}
+    var displayGridLayout: WeekViewLayout? = null
+    var style: WeekViewStyle = WeekViewStyle.Default
+    var tapEnabled: Boolean = false
+    var longPressEnabled: Boolean = false
+    var dragEnabled: Boolean = false
+    var onEventClick: ((WeekViewEvent) -> Unit)? = null
+    var onEmptyViewClick: ((kotlinx.datetime.LocalDateTime) -> Unit)? = null
+    var onEmptyViewLongClick: ((kotlinx.datetime.LocalDateTime) -> Unit)? = null
+    var onEventLongClick: ((WeekViewEvent) -> Boolean)? = null
     var onDragStart: (WeekViewEvent, Offset) -> Unit = { _, _ -> }
     var onDragMove: (Offset) -> Unit = {}
     var onDragEnd: () -> Unit = {}

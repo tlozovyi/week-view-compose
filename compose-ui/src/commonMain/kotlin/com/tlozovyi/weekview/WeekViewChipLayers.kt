@@ -33,6 +33,7 @@ internal data class WeekViewChipLayers(
 @Composable
 internal fun rememberWeekViewChipLayers(
     events: List<WeekViewEvent>,
+    blockedTimes: List<WeekViewBlockedTime>,
     eventDateRange: List<LocalDate>,
     anchorGeneration: Int,
     style: WeekViewStyle,
@@ -41,9 +42,10 @@ internal fun rememberWeekViewChipLayers(
     renderDates: List<LocalDate>,
     density: Density,
 ): WeekViewChipLayers {
-    val allEventChips = remember(events, eventDateRange, anchorGeneration, style, layoutConfig, density) {
+    val allEventChips = remember(events, blockedTimes, eventDateRange, anchorGeneration, style, layoutConfig, density) {
         val resolvedEvents = events.toResolvedEntities(style, density, eventDateRange)
-        layoutEngine.createEventChips(resolvedEvents, layoutConfig)
+        val resolvedBlockedTimes = blockedTimes.toResolvedBlockedEntities(style, density, eventDateRange)
+        layoutEngine.createEventChips(resolvedEvents + resolvedBlockedTimes, layoutConfig)
     }
 
     val eventChips = remember(allEventChips) {

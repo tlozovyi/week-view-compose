@@ -18,7 +18,6 @@ package com.tlozovyi.weekview
 
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -29,8 +28,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -272,57 +271,94 @@ internal fun Modifier.weekViewEventClick(
     onEventClick: (WeekViewEvent) -> Unit,
 ): Modifier {
     return weekViewTimedEventGestures(
-        clickEnabled = enabled,
-        dragEnabled = false,
+        enabled = enabled,
         gestureScope = WeekViewGestureScope().apply {
             this.eventChips = eventChips
             this.horizontalTranslationPx = horizontalTranslationPx
             this.onEventClick = onEventClick
+            this.tapEnabled = enabled
         },
     )
 }
 
 internal fun Modifier.weekViewTimedEventGestures(
-    clickEnabled: Boolean,
-    dragEnabled: Boolean,
+    enabled: Boolean,
     gestureScope: WeekViewGestureScope,
 ): Modifier {
-    if (!clickEnabled && !dragEnabled) {
+    if (!enabled) {
         return this
     }
 
-    return pointerInput(gestureScope, clickEnabled, dragEnabled) {
-        coroutineScope {
-            if (dragEnabled) {
-                launch {
-                    detectDragGesturesAfterLongPress(
-                        onDragStart = { offset ->
-                            val event = gestureScope.eventChips.findEventAt(
-                                x = offset.x - gestureScope.horizontalTranslationPx,
-                                y = offset.y,
-                            )
-                            if (event != null) {
-                                gestureScope.onDragStart(event, offset)
-                            }
-                        },
-                        onDrag = { change, _ ->
-                            change.consume()
-                            gestureScope.onDragMove(change.position)
-                        },
-                        onDragEnd = { gestureScope.onDragEnd() },
-                        onDragCancel = { gestureScope.onDragCancel() },
-                    )
+    return pointerInput(gestureScope) {
+        awaitEachGesture {
+            if (!gestureScope.tapEnabled && !gestureScope.longPressEnabled) {
+                return@awaitEachGesture
+            }
+            val down = awaitFirstDown(requireUnconsumed = false)
+            val pointerId = down.id
+            val touchSlop = viewConfiguration.touchSlop
+            val longPressTimeoutMillis = viewConfiguration.longPressTimeoutMillis
+            val layout = gestureScope.displayGridLayout ?: return@awaitEachGesture
+
+            val releasedBeforeLongPress = withTimeoutOrNull(longPressTimeoutMillis) {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Main)
+                    val change = event.changes.firstOrNull { it.id == pointerId } ?: return@withTimeoutOrNull false
+                    if (!change.pressed) {
+                        return@withTimeoutOrNull true
+                    }
+                    if (change.positionChange().getDistance() > touchSlop) {
+                        return@withTimeoutOrNull false
+                    }
                 }
             }
-            if (clickEnabled) {
-                launch {
-                    detectTapGestures { offset ->
+
+            when {
+                releasedBeforeLongPress == true && gestureScope.tapEnabled -> {
+                    resolveGridTap(
+                        offset = down.position,
+                        eventChips = gestureScope.eventChips,
+                        horizontalTranslationPx = gestureScope.horizontalTranslationPx,
+                        displayGridLayout = layout,
+                        style = gestureScope.style,
+                        onEventClick = gestureScope.onEventClick,
+                        onEmptyViewClick = gestureScope.onEmptyViewClick,
+                    )
+                }
+
+                releasedBeforeLongPress == null && gestureScope.longPressEnabled -> {
+                    val longPressResult = resolveGridLongPress(
+                        offset = down.position,
+                        eventChips = gestureScope.eventChips,
+                        horizontalTranslationPx = gestureScope.horizontalTranslationPx,
+                        displayGridLayout = layout,
+                        style = gestureScope.style,
+                        dragEnabled = gestureScope.dragEnabled,
+                        onEventLongClick = gestureScope.onEventLongClick,
+                        onEmptyViewLongClick = gestureScope.onEmptyViewLongClick,
+                    )
+                    if (longPressResult.shouldStartDrag) {
                         val event = gestureScope.eventChips.findEventAt(
-                            x = offset.x - gestureScope.horizontalTranslationPx,
-                            y = offset.y,
+                            x = down.position.x - gestureScope.horizontalTranslationPx,
+                            y = down.position.y,
                         )
                         if (event != null) {
-                            gestureScope.onEventClick(event)
+                            gestureScope.onDragStart(event, down.position)
+                            try {
+                                while (true) {
+                                    val dragEvent = awaitPointerEvent(PointerEventPass.Main)
+                                    val dragChange = dragEvent.changes.firstOrNull { it.id == pointerId }
+                                    if (dragChange == null || !dragChange.pressed) {
+                                        gestureScope.onDragEnd()
+                                        break
+                                    }
+                                    dragChange.consume()
+                                    gestureScope.onDragMove(dragChange.position)
+                                }
+                            } catch (cancellation: CancellationException) {
+                                gestureScope.onDragCancel()
+                                throw cancellation
+                            }
                         }
                     }
                 }

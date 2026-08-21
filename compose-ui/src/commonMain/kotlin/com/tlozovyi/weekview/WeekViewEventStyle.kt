@@ -54,6 +54,20 @@ internal fun WeekViewEventStyle?.toEntityStyle(
     )
 }
 
+internal fun WeekViewEventStyle?.toBlockedTimeEntityStyle(
+    style: WeekViewStyle,
+    density: Density,
+): ResolvedWeekViewEntity.Style {
+    val blockedStyle = this
+    return ResolvedWeekViewEntity.Style(
+        textColor = (blockedStyle?.textColor ?: style.defaultBlockedTimeTextColor).toArgbLong(),
+        backgroundColor = (blockedStyle?.backgroundColor ?: style.defaultBlockedTimeBackgroundColor).toArgbLong(),
+        borderColor = blockedStyle?.borderColor?.toArgbLong() ?: style.defaultBlockedTimeBorderColor?.toArgbLong(),
+        borderWidth = blockedStyle?.borderWidthDp?.let { with(density) { it.roundToPx() } },
+        cornerRadius = blockedStyle?.cornerRadiusDp?.let { with(density) { it.roundToPx() } },
+    )
+}
+
 internal fun WeekViewStyle.defaultEntityStyle(density: Density): ResolvedWeekViewEntity.Style {
     return WeekViewEventStyle().toEntityStyle(this, density)
 }

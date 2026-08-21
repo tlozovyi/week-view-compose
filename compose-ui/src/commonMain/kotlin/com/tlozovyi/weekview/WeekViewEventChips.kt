@@ -54,6 +54,32 @@ internal fun DrawScope.drawWeekViewEventChips(
         if (eventChip.eventId == draggingEventId) {
             continue
         }
+        if (eventChip.event !is ResolvedWeekViewEntity.BlockedTime) {
+            continue
+        }
+
+        drawEventChip(
+            eventChip = eventChip,
+            style = style,
+            density = density,
+            textMeasurer = textMeasurer,
+            paddingHorizontalPx = paddingHorizontalPx,
+            paddingVerticalPx = paddingVerticalPx,
+            defaultCornerRadiusPx = defaultCornerRadiusPx,
+            textStyle = textStyle,
+        )
+    }
+
+    for (eventChip in eventChips) {
+        if (eventChip.isHidden || eventChip.bounds.isEmpty()) {
+            continue
+        }
+        if (eventChip.eventId == draggingEventId) {
+            continue
+        }
+        if (eventChip.event !is ResolvedWeekViewEntity.Event<*>) {
+            continue
+        }
 
         drawEventChip(
             eventChip = eventChip,
@@ -96,11 +122,13 @@ private fun DrawScope.drawEventChip(
         val entity = eventChip.event
         val bounds = eventChip.bounds
         val rect = Rect(bounds.left, bounds.top, bounds.right, bounds.bottom)
+        val isBlockedTime = entity is ResolvedWeekViewEntity.BlockedTime
         val cornerRadiusPx = (entity.style.cornerRadius?.toFloat() ?: defaultCornerRadiusPx)
-        val backgroundColor = if (isDragging) {
-            Color(0xFF757575)
-        } else {
-            entity.style.backgroundColor?.toComposeColor()
+        val backgroundColor = when {
+            isDragging -> Color(0xFF757575)
+            isBlockedTime -> entity.style.backgroundColor?.toComposeColor()
+                ?: style.defaultBlockedTimeBackgroundColor
+            else -> entity.style.backgroundColor?.toComposeColor()
                 ?: style.defaultEventBackgroundColor
         }
 
@@ -132,8 +160,16 @@ private fun DrawScope.drawEventChip(
             return
         }
 
-        val chipTextStyle = entity.style.textColor?.toComposeColor()?.let { textStyle.copy(color = it) }
-            ?: textStyle
+        val chipTextStyle = when {
+            isBlockedTime -> entity.style.textColor?.toComposeColor()?.let { textStyle.copy(color = it) }
+                ?: textStyle.copy(color = style.defaultBlockedTimeTextColor)
+            else -> entity.style.textColor?.toComposeColor()?.let { textStyle.copy(color = it) }
+                ?: textStyle
+        }
+
+        if (entity.title.isEmpty()) {
+            return
+        }
 
         val textLayoutResult = fitTimedEventChipText(
             textMeasurer = textMeasurer,

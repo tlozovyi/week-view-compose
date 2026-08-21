@@ -54,8 +54,7 @@ internal fun WeekViewGridSection(
     eventTextMeasurer: TextMeasurer,
     timeFormatter: TimeFormatter,
     gestureScope: WeekViewGestureScope,
-    eventClickEnabled: Boolean,
-    eventDragEnabled: Boolean,
+    gridGesturesEnabled: Boolean,
     gridScrollOffsetPx: () -> Float,
     gridScrollableState: ScrollableState,
     isPinchZoomActive: Boolean,
@@ -120,8 +119,7 @@ internal fun WeekViewGridSection(
                         .width(with(density) { gridLayout.contentGridWidthPx.toDp() })
                         .height(gridHeightDp)
                         .weekViewTimedEventGestures(
-                            clickEnabled = eventClickEnabled,
-                            dragEnabled = eventDragEnabled,
+                            enabled = gridGesturesEnabled,
                             gestureScope = gestureScope,
                         ),
                 ) {

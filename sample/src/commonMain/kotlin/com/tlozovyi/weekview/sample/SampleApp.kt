@@ -17,15 +17,16 @@
 package com.tlozovyi.weekview.sample
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -36,10 +37,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -53,10 +52,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tlozovyi.weekview.WeekView
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import kotlin.time.Clock
 
 @Composable
 fun SampleApp() {
@@ -64,6 +63,7 @@ fun SampleApp() {
     var selectedMode by remember { mutableStateOf(SampleViewMode.ThreeDaySnapping) }
     var firstVisibleDate by remember(selectedMode) { mutableStateOf(today) }
     var events by remember { mutableStateOf(sampleEvents(today)) }
+    var blockedTimes by remember { mutableStateOf(sampleBlockedTimes(today)) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -112,6 +112,7 @@ fun SampleApp() {
                                 .fillMaxWidth()
                                 .weight(1f),
                             events = events,
+                            blockedTimes = blockedTimes,
                             style = selectedMode.style,
                             firstVisibleDate = firstVisibleDate,
                             onFirstVisibleDateChange = { updatedDate ->
@@ -122,6 +123,26 @@ fun SampleApp() {
                             onEventClick = { event ->
                                 scope.launch {
                                     snackbarHostState.showSnackbar("Selected: ${event.title}")
+                                }
+                            },
+                            onEventLongClick = { event ->
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Long-press: ${event.title}")
+                                }
+                                true
+                            },
+                            onEmptyViewClick = { time ->
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        "Empty tap: ${time.date} ${time.hour}:${time.minute.toString().padStart(2, '0')}",
+                                    )
+                                }
+                            },
+                            onEmptyViewLongClick = { time ->
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        "Empty long-press: ${time.date} ${time.hour}:${time.minute.toString().padStart(2, '0')}",
+                                    )
                                 }
                             },
                             onEventDrop = { event, newStartTime, newEndTime ->

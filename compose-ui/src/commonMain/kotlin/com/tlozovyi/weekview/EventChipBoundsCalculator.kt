@@ -44,6 +44,9 @@ internal class EventChipBoundsCalculator(
         eventChip: EventChip,
         dayStartX: Float,
     ): ChipBounds {
+        val isBlockedTime = eventChip.event is ResolvedWeekViewEntity.BlockedTime
+        val columnDrawableWidth = if (isBlockedTime) layout.dayWidthPx else drawableDayWidth
+
         val minutesFromStart = eventChip.minutesFromStartHour
         val top = calculateDistanceFromTop(minutesFromStart)
 
@@ -53,22 +56,22 @@ internal class EventChipBoundsCalculator(
         val partialEventEndsAtEndOfDay = eventChip.endTime.isAtEndOfPeriod(hour = style.maxHour)
         val fullEventContinuesOnNextDay = eventChip.endsOnLaterDay
 
-        if (!(partialEventEndsAtEndOfDay && fullEventContinuesOnNextDay)) {
+        if (!(partialEventEndsAtEndOfDay && fullEventContinuesOnNextDay) && !isBlockedTime) {
             bottom -= eventMarginVerticalPx
         }
 
-        var left = dayStartX + eventChip.relativeStart * drawableDayWidth
-        var right = left + eventChip.relativeWidth * drawableDayWidth
+        var left = dayStartX + eventChip.relativeStart * columnDrawableWidth
+        var right = left + eventChip.relativeWidth * columnDrawableWidth
 
         if (left > dayStartX) {
             left += overlappingEventGapPx / 2f
         }
 
-        if (right < dayStartX + drawableDayWidth) {
+        if (right < dayStartX + columnDrawableWidth) {
             right -= overlappingEventGapPx / 2f
         }
 
-        val hasNoOverlaps = right == dayStartX + drawableDayWidth
+        val hasNoOverlaps = right == dayStartX + columnDrawableWidth
         if (isSingleDay && hasNoOverlaps) {
             right -= singleDayHorizontalPaddingPx * 2f
         }

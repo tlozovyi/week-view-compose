@@ -105,6 +105,12 @@ data class WeekViewStyle(
     val nowDotRadiusDp: Dp = 5.dp,
     /** Default fill color for timed event chips. */
     val defaultEventBackgroundColor: Color = Color(0xFF9FC6E7),
+    /** Default fill color for blocked time ranges on the day grid. */
+    val defaultBlockedTimeBackgroundColor: Color = Color(0x1A757575),
+    /** Default text color for blocked time range labels. */
+    val defaultBlockedTimeTextColor: Color = Color(0xFF757575),
+    /** Default border color for blocked time ranges; `null` means no border. */
+    val defaultBlockedTimeBorderColor: Color? = null,
     /** Default text color for timed event chips. */
     val defaultEventTextColor: Color = Color.White,
     /** Default border color for timed event chips; `null` means no border. */

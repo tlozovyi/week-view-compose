@@ -17,6 +17,7 @@
 package com.tlozovyi.weekview.sample
 
 import androidx.compose.ui.graphics.Color
+import com.tlozovyi.weekview.WeekViewBlockedTime
 import com.tlozovyi.weekview.WeekViewEvent
 import com.tlozovyi.weekview.WeekViewEventStyle
 import kotlinx.datetime.LocalDate
@@ -415,6 +416,22 @@ internal fun sampleEvents(today: LocalDate): List<WeekViewEvent> {
             endTime = fourteenDaysAhead.atTime(0, 0),
             isAllDay = true,
             style = WeekViewEventStyle(backgroundColor = Color(0xFFAB47BC)),
+        ),
+    )
+}
+
+internal fun sampleBlockedTimes(today: LocalDate): List<WeekViewBlockedTime> {
+    return listOf(
+        WeekViewBlockedTime(
+            id = 9001,
+            startTime = today.atTime(12, 0),
+            endTime = today.atTime(13, 0),
+            title = "Lunch break",
+        ),
+        WeekViewBlockedTime(
+            id = 9002,
+            startTime = today.atTime(18, 0),
+            endTime = today.atTime(19, 0),
         ),
     )
 }
