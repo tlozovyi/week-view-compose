@@ -75,3 +75,9 @@ internal fun Long.toComposeColor(): Color {
         blue = (argb and 0xFF) / 255f,
     )
 }
+
+/** Applies drag dimming without replacing a transparent chip's own alpha. */
+internal fun Color.eventChipDrawColor(isDragging: Boolean): Color {
+    val dragAlphaFactor = if (isDragging) 0.85f else 1f
+    return copy(alpha = alpha * dragAlphaFactor)
+}

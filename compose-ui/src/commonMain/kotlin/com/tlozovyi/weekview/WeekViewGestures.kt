@@ -29,6 +29,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -290,33 +292,39 @@ internal fun Modifier.weekViewTimedEventGestures(
     }
 
     return pointerInput(gestureScope, clickEnabled, dragEnabled) {
-        if (dragEnabled) {
-            detectDragGesturesAfterLongPress(
-                onDragStart = { offset ->
-                    val event = gestureScope.eventChips.findEventAt(
-                        x = offset.x - gestureScope.horizontalTranslationPx,
-                        y = offset.y,
+        coroutineScope {
+            if (dragEnabled) {
+                launch {
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { offset ->
+                            val event = gestureScope.eventChips.findEventAt(
+                                x = offset.x - gestureScope.horizontalTranslationPx,
+                                y = offset.y,
+                            )
+                            if (event != null) {
+                                gestureScope.onDragStart(event, offset)
+                            }
+                        },
+                        onDrag = { change, _ ->
+                            change.consume()
+                            gestureScope.onDragMove(change.position)
+                        },
+                        onDragEnd = { gestureScope.onDragEnd() },
+                        onDragCancel = { gestureScope.onDragCancel() },
                     )
-                    if (event != null) {
-                        gestureScope.onDragStart(event, offset)
+                }
+            }
+            if (clickEnabled) {
+                launch {
+                    detectTapGestures { offset ->
+                        val event = gestureScope.eventChips.findEventAt(
+                            x = offset.x - gestureScope.horizontalTranslationPx,
+                            y = offset.y,
+                        )
+                        if (event != null) {
+                            gestureScope.onEventClick(event)
+                        }
                     }
-                },
-                onDrag = { change, _ ->
-                    change.consume()
-                    gestureScope.onDragMove(change.position)
-                },
-                onDragEnd = { gestureScope.onDragEnd() },
-                onDragCancel = { gestureScope.onDragCancel() },
-            )
-        }
-        if (clickEnabled) {
-            detectTapGestures { offset ->
-                val event = gestureScope.eventChips.findEventAt(
-                    x = offset.x - gestureScope.horizontalTranslationPx,
-                    y = offset.y,
-                )
-                if (event != null) {
-                    gestureScope.onEventClick(event)
                 }
             }
         }

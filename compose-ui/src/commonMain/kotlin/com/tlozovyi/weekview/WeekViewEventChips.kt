@@ -103,10 +103,9 @@ private fun DrawScope.drawEventChip(
             entity.style.backgroundColor?.toComposeColor()
                 ?: style.defaultEventBackgroundColor
         }
-        val chipAlpha = if (isDragging) 0.85f else 1f
 
         drawRoundRect(
-            color = backgroundColor.copy(alpha = chipAlpha),
+            color = backgroundColor.eventChipDrawColor(isDragging),
             topLeft = Offset(rect.left, rect.top),
             size = Size(rect.width, rect.height),
             cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
