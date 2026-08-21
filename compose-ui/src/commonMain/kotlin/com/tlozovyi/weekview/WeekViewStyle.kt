@@ -117,6 +117,8 @@ data class WeekViewStyle(
     val eventPaddingVerticalDp: Dp = 2.dp,
     /** Text size of timed event titles. */
     val eventTextSizeSp: TextUnit = 12.sp,
+    /** Shrinks timed and all-day chip text until it fits the chip bounds (View library: `adaptiveEventTextSize`). */
+    val adaptiveEventTextSize: Boolean = false,
     /** Gap between horizontally overlapping event chips in the same row. */
     val overlappingEventGapDp: Dp = 1.dp,
     /** Vertical margin between stacked event chips. */

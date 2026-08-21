@@ -27,12 +27,13 @@ internal enum class SampleViewMode(
 ) {
     ThreeDaySnapping(
         title = "3 days · snap",
-        description = "Default scrollable view with 3-day page snap",
+        description = "Default scrollable view with 3-day page snap and adaptive chip text",
         style = WeekViewStyle(
             numberOfVisibleDays = 3,
             minHour = 7,
             maxHour = 22,
             horizontalScrollSnapEnabled = true,
+            adaptiveEventTextSize = true,
         ),
     ),
     SevenDaySnapping(
@@ -43,6 +44,7 @@ internal enum class SampleViewMode(
             minHour = 7,
             maxHour = 22,
             horizontalScrollSnapEnabled = true,
+            adaptiveEventTextSize = true,
             firstDayOfWeek = DayOfWeek.MONDAY,
         ),
     ),
@@ -77,6 +79,7 @@ internal enum class SampleViewMode(
             minHour = 8,
             maxHour = 20,
             horizontalScrollSnapEnabled = true,
+            adaptiveEventTextSize = true,
         ),
     ),
     HorizontalAllDay(
@@ -88,6 +91,18 @@ internal enum class SampleViewMode(
             maxHour = 22,
             arrangeAllDayEventsVertically = false,
             horizontalScrollSnapEnabled = true,
+            adaptiveEventTextSize = true,
+        ),
+    ),
+    FixedEventText(
+        title = "Fixed text size",
+        description = "3-day view with adaptiveEventTextSize disabled (compare chip labels)",
+        style = WeekViewStyle(
+            numberOfVisibleDays = 3,
+            minHour = 7,
+            maxHour = 22,
+            horizontalScrollSnapEnabled = true,
+            adaptiveEventTextSize = false,
         ),
     ),
 }

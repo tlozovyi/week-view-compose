@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.9.0-beta
+
+Event chip text parity with the View library.
+
+### Added
+
+- **`adaptiveEventTextSize`** on `WeekViewStyle` — shrinks chip labels until they fit (ported from View `TextFitter`)
+- **Subtitle rendering** on timed event chips (title + newline + subtitle) and all-day chips (title + space + subtitle)
+- Multi-line trimming before font shrink, matching View library behavior
+- Unit tests for chip text composition (`WeekViewTextFitterTest`)
+
+### Changed
+
+- Sample app enables adaptive text by default; new **Fixed text size** mode compares with `adaptiveEventTextSize = false`
+- Sample events include short overlapping slots and all-day subtitles to demonstrate text fitting
+
 ## 0.8.0-beta3
 
 ### Changed

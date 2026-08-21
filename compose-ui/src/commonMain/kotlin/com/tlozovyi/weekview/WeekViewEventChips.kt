@@ -26,7 +26,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
@@ -137,14 +136,13 @@ private fun DrawScope.drawEventChip(
         val chipTextStyle = entity.style.textColor?.toComposeColor()?.let { textStyle.copy(color = it) }
             ?: textStyle
 
-        val textLayoutResult = textMeasurer.measure(
-            text = entity.title,
-            style = chipTextStyle,
-            maxLines = 2,
-            constraints = Constraints(
-                maxWidth = availableWidth.coerceAtLeast(0),
-                maxHeight = availableHeight.coerceAtLeast(0),
-            ),
+        val textLayoutResult = fitTimedEventChipText(
+            textMeasurer = textMeasurer,
+            entity = entity,
+            baseStyle = chipTextStyle,
+            maxWidth = availableWidth,
+            maxHeight = availableHeight,
+            adaptiveEventTextSize = style.adaptiveEventTextSize,
         )
 
         drawText(

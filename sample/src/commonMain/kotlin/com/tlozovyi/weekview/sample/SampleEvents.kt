@@ -48,6 +48,7 @@ internal fun sampleEvents(today: LocalDate): List<WeekViewEvent> {
         WeekViewEvent(
             id = 1,
             title = "Team standup",
+            subtitle = "Standup room",
             startTime = today.atTime(9, 0),
             endTime = today.atTime(9, 30),
         ),
@@ -74,9 +75,18 @@ internal fun sampleEvents(today: LocalDate): List<WeekViewEvent> {
         WeekViewEvent(
             id = 5,
             title = "1:1",
+            subtitle = "Safe space room",
             startTime = today.atTime(10, 15),
             endTime = today.atTime(11, 0),
             style = WeekViewEventStyle(backgroundColor = Color(0xFF9575CD)),
+        ),
+        WeekViewEvent(
+            id = 501,
+            title = "Quarterly planning review",
+            subtitle = "Building A · Room 12",
+            startTime = today.atTime(10, 45),
+            endTime = today.atTime(11, 0),
+            style = WeekViewEventStyle(backgroundColor = Color(0xFFE57373)),
         ),
         WeekViewEvent(
             id = 6,
@@ -130,6 +140,7 @@ internal fun sampleEvents(today: LocalDate): List<WeekViewEvent> {
         WeekViewEvent(
             id = 101,
             title = "Sprint demo",
+            subtitle = "All hands",
             startTime = today.atTime(0, 0),
             endTime = today.plusDays(1).atTime(0, 0),
             isAllDay = true,

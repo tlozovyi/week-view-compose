@@ -4,12 +4,12 @@
 
 Compose Multiplatform calendar week view for **Android** and **iOS**.
 
-**Status:** `0.8.0-beta` — calendar grid, event chips, tap handling, continuous horizontal scroll with page snap, all-day events, pinch-to-zoom, and drag-and-drop.
+**Status:** `0.9.0-beta` — calendar grid, event chips with adaptive text and subtitles, tap handling, continuous horizontal scroll with page snap, all-day events, pinch-to-zoom, and drag-and-drop.
 
 ## Features
 
 - Single-day and multi-day calendar views (1, 3, 7, or any custom column count)
-- Timed event chips with overlap layout on the day grid
+- Timed event chips with overlap layout; optional subtitle and adaptive text size
 - All-day events in the header row (vertical or horizontal arrangement)
 - Tap handling for timed and all-day events
 - Continuous horizontal scrolling with optional page snap on finger release
@@ -31,11 +31,11 @@ Compose Multiplatform calendar week view for **Android** and **iOS**.
 - RTL layout
 - Accessibility
 
-## Versions (0.8.0-beta)
+## Versions (0.9.0-beta)
 
 | | |
 |---|---|
-| **Release** | 0.8.0-beta |
+| **Release** | 0.9.0-beta |
 | **minSdk (Android)** | 24 |
 | **compileSdk / targetSdk** | 35 |
 | **Kotlin** | 2.1.20 |
@@ -57,6 +57,7 @@ This project is a Compose Multiplatform reimplementation **inspired by** [Androi
 
 - Take a look at the [sample app](sample/src/commonMain/kotlin/com/tlozovyi/weekview/sample/SampleApp.kt) for a working integration with multiple view modes.
 - See [CHANGELOG.md](CHANGELOG.md) for release notes and API changes.
+- See [docs/xml-vs-compose-parity.md](docs/xml-vs-compose-parity.md) for XML vs Compose feature gaps and 1.0.0 roadmap.
 - For the View-based library, see the [Android Week View wiki](https://github.com/tlozovyi/Android-Week-View/wiki).
 
 ## Dependency
@@ -72,7 +73,7 @@ repositories {
 
 ```kotlin
 // commonMain (Kotlin Multiplatform)
-implementation("com.github.tlozovyi.week-view-compose:compose-ui:0.8.0-beta")
+implementation("com.github.tlozovyi.week-view-compose:compose-ui:0.9.0-beta")
 ```
 
 When building from source, add both modules to your project:
@@ -137,6 +138,23 @@ WeekViewEvent(
         backgroundColor = Color(0xFFE57373),
         textColor = Color.White,
     ),
+)
+```
+
+Subtitles and adaptive text size:
+
+```kotlin
+WeekViewEvent(
+    id = 4,
+    title = "Product sync",
+    subtitle = "Roadmap Q4",
+    startTime = start,
+    endTime = end,
+)
+
+WeekViewStyle(
+    adaptiveEventTextSize = true,  // shrink labels to fit short chips (default false)
+    eventTextSizeSp = 12.sp,
 )
 ```
 

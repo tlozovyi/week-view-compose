@@ -156,14 +156,13 @@ private fun DrawScope.drawAllDayEventChip(
     val chipTextStyle = entity.style.textColor?.toComposeColor()?.let { textStyle.copy(color = it) }
         ?: textStyle
 
-    val textLayoutResult = textMeasurer.measure(
-        text = entity.title,
-        style = chipTextStyle,
-        maxLines = 1,
-        constraints = Constraints(
-            maxWidth = availableWidth.coerceAtLeast(0),
-            maxHeight = availableHeight.coerceAtLeast(0),
-        ),
+    val textLayoutResult = fitAllDayEventChipText(
+        textMeasurer = textMeasurer,
+        entity = entity,
+        baseStyle = chipTextStyle,
+        maxWidth = availableWidth,
+        maxHeight = availableHeight,
+        adaptiveEventTextSize = style.adaptiveEventTextSize,
     )
 
     val textX = bounds.left + paddingHorizontalPx
