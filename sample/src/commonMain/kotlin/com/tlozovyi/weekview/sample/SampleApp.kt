@@ -51,9 +51,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tlozovyi.weekview.WeekView
+import com.tlozovyi.weekview.rememberWeekViewScrollState
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -64,6 +66,7 @@ fun SampleApp() {
     var firstVisibleDate by remember(selectedMode) { mutableStateOf(today) }
     var events by remember { mutableStateOf(sampleEvents(today)) }
     var blockedTimes by remember { mutableStateOf(sampleBlockedTimes(today)) }
+    val scrollState = rememberWeekViewScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -103,6 +106,12 @@ fun SampleApp() {
                             onNext = {
                                 firstVisibleDate = firstVisibleDate.plusDays(numberOfVisibleDays(selectedMode))
                             },
+                            onJumpToToday = {
+                                scope.launch {
+                                    scrollState.scrollToDateTime(today.atTime(9, 0))
+                                    firstVisibleDate = scrollState.firstVisibleDate
+                                }
+                            },
                         )
                     }
 
@@ -113,6 +122,7 @@ fun SampleApp() {
                                 .weight(1f),
                             events = events,
                             blockedTimes = blockedTimes,
+                            scrollState = scrollState,
                             style = selectedMode.style,
                             firstVisibleDate = firstVisibleDate,
                             onFirstVisibleDateChange = { updatedDate ->
@@ -227,6 +237,7 @@ private fun StaticWeekNavigationBar(
     numberOfVisibleDays: Int,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
+    onJumpToToday: () -> Unit,
 ) {
     val lastVisibleDate = firstVisibleDate.plusDays(numberOfVisibleDays - 1)
 
@@ -244,6 +255,9 @@ private fun StaticWeekNavigationBar(
             text = "$firstVisibleDate – $lastVisibleDate",
             style = MaterialTheme.typography.bodyMedium,
         )
+        TextButton(onClick = onJumpToToday) {
+            Text("Today")
+        }
         IconButton(onClick = onNext) {
             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next week")
         }

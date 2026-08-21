@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.10.0-beta
+
+Programmatic scroll API matching View library `scrollToDate` / `scrollToTime` / `scrollToDateTime`.
+
+### Added
+
+- **`WeekViewScrollState`** and **`rememberWeekViewScrollState()`** — suspend `scrollToDate`, `scrollToTime`, `scrollToDateTime`
+- Optional **`scrollState`** parameter on `WeekView`
+- Read properties: **`firstVisibleDate`**, **`gridScrollOffsetPx`**
+- Optional **`minDate`** / **`maxDate`** on `WeekViewStyle` for scroll clamping
+- 300ms animated scroll (instant when `animated = false`)
+- Unit tests for scroll target math and date clamping
+- Sample **Today** button using `scrollToDateTime`
+
 ## 0.9.0-beta
 
 Event chip text parity, blocked time ranges, and grid interaction callbacks.

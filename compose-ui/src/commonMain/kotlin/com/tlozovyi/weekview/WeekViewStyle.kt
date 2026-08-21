@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
 
 /**
  * Visual and behavioral configuration for [WeekView].
@@ -143,6 +144,10 @@ data class WeekViewStyle(
     val firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
     /** Allows long-press drag-and-drop when [WeekView] receives [onEventDrop]. */
     val dragAndDropEnabled: Boolean = true,
+    /** Earliest date allowed for programmatic and external scroll; `null` means unbounded. */
+    val minDate: LocalDate? = null,
+    /** Latest date allowed for programmatic and external scroll; `null` means unbounded. */
+    val maxDate: LocalDate? = null,
 ) {
     init {
         require(numberOfVisibleDays >= 1) { "numberOfVisibleDays must be at least 1" }

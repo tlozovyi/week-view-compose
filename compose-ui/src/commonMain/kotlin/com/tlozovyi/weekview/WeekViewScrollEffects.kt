@@ -44,7 +44,11 @@ internal fun scrollOffsetForCurrentTime(
     val y = layout.hourY(now.hour, style.minHour) + (now.minute / 60f) * layout.hourHeightPx
     val viewportHeight = gridViewportHeightPx
         ?: (layout.viewportHeightPx - layout.headerHeightPx).coerceAtLeast(0f)
-    return (y - viewportHeight / 2f).coerceAtLeast(0f)
+    val maxScroll = maxVerticalScrollOffsetPx(
+        gridHeightPx = layout.gridHeightPx,
+        viewportGridHeightPx = viewportHeight,
+    )
+    return (y - viewportHeight / 2f).coerceIn(0f, maxScroll)
 }
 
 /** Repeatedly scrolls the grid and shifts the dragged event while the pointer stays near an edge. */

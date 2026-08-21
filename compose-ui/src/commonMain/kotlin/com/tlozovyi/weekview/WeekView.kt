@@ -72,6 +72,8 @@ import kotlinx.datetime.todayIn
  * @param onEmptyViewLongClick Called when the user long-presses an empty grid area.
  * @param onEventDrop Called when the user finishes dragging a timed event. Receives the event and
  *   its snapped start/end times. Requires [WeekViewStyle.dragAndDropEnabled].
+ * @param scrollState Optional controller for programmatic scroll commands ([scrollToDate],
+ *   [scrollToTime], [scrollToDateTime]). Create with [rememberWeekViewScrollState].
  * @param dateFormatter Formats date labels in the header row.
  * @param timeFormatter Formats hour labels in the time column.
  */
@@ -89,6 +91,7 @@ fun WeekView(
     onEmptyViewClick: ((LocalDateTime) -> Unit)? = null,
     onEmptyViewLongClick: ((LocalDateTime) -> Unit)? = null,
     onEventDrop: ((WeekViewEvent, LocalDateTime, LocalDateTime) -> Unit)? = null,
+    scrollState: WeekViewScrollState? = null,
     dateFormatter: DateFormatter = { year, month, day, dayOfWeek ->
         defaultDateFormatter(year, month, day, dayOfWeek, style.numberOfVisibleDays)
     },
@@ -337,6 +340,37 @@ fun WeekView(
             pinchBaselineFocalY = { pinchBaselineFocalY },
             hourHeightPx = hourHeightPx,
         )
+
+        WeekViewProgrammaticScrollEffect(
+            scrollState = scrollState,
+            layout = derivedLayouts.layout,
+            style = style,
+            gridViewportHeightPx = gridViewportHeightPx,
+            maxGridScrollOffsetPx = { pinchScrollOps.maxGridScrollOffsetPx() },
+            clampGridScrollOffsetPx = pinchScrollOps.clampGridScrollOffsetPx,
+            anchorDate = { anchorDate },
+            horizontalScrollOffsetPx = { horizontalScrollOffsetPx },
+            gridScrollOffsetPx = { gridScrollOffsetPx },
+            onAnchorDateChange = { anchorDate = it },
+            onHorizontalScrollOffsetChange = { horizontalScrollOffsetPx = it },
+            onGridScrollOffsetChange = { gridScrollOffsetPx = it },
+            onAnchorGenerationBump = { anchorGeneration++ },
+            onFirstVisibleDateChange = onFirstVisibleDateChange,
+            horizontalScrollSnapState = horizontalScrollSnapState,
+        )
+
+        SideEffect {
+            scrollState?.updateObservedState(
+                firstVisibleDate = firstVisibleDateFromScrollState(
+                    anchorDate = anchorDate,
+                    scrollOffsetPx = horizontalScrollOffsetPx,
+                    dayWidthPx = derivedLayouts.layout.dayWidthPx,
+                    numberOfVisibleDays = style.numberOfVisibleDays,
+                    firstDayOfWeek = style.firstDayOfWeek,
+                ),
+                gridScrollOffsetPx = gridScrollOffsetPx,
+            )
+        }
 
         SideEffect {
             if (!isPinchZoomActive) {
