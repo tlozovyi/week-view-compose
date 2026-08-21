@@ -106,7 +106,30 @@ sealed class ResolvedWeekViewEntity {
         val borderWidth: Int? = null,
         /** Corner radius in pixels, or `null` for default. */
         val cornerRadius: Int? = null,
+        /** Optional overlay pattern drawn on the chip background. */
+        val pattern: FillPattern? = null,
     )
+
+    /** Hatch or dot overlay for chip backgrounds. */
+    @PublicApi
+    sealed class FillPattern {
+        /** Diagonal line hatch. */
+        @PublicApi
+        data class Lined(
+            val colorArgb: Long,
+            val strokeWidthPx: Int,
+            val spacingPx: Int,
+            val startToEnd: Boolean = true,
+        ) : FillPattern()
+
+        /** Grid of dots. */
+        @PublicApi
+        data class Dotted(
+            val colorArgb: Long,
+            val strokeWidthPx: Int,
+            val spacingPx: Int,
+        ) : FillPattern()
+    }
 
     internal val isNotAllDay: Boolean
         get() = isAllDay.not()

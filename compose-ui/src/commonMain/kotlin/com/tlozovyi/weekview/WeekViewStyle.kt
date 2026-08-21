@@ -17,6 +17,8 @@
 package com.tlozovyi.weekview
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -66,10 +68,46 @@ data class WeekViewStyle(
     val headerBackgroundColor: Color = Color(0xFFF5F5F5),
     /** Color of date labels in the header. */
     val headerTextColor: Color = Color.Black,
+    /** Text size of date labels in the header. */
+    val headerTextSizeSp: TextUnit = 12.sp,
+    /** Font weight of date labels when [fontFamily] is set; otherwise approximates sans-serif-medium. */
+    val headerFontWeight: FontWeight = FontWeight.Medium,
+    /** Optional font for event chips, header labels, time column, and week number badge. */
+    val fontFamily: FontFamily? = null,
+    /** Background for weekend day columns before the current time (non-today); `null` uses [pastDayBackgroundColor]. */
+    val pastWeekendBackgroundColor: Color? = null,
+    /** Background for weekend day columns after the current time (non-today); `null` uses [futureDayBackgroundColor]. */
+    val futureWeekendBackgroundColor: Color? = null,
+    /** Header text color on weekend columns; `null` uses [headerTextColor]. */
+    val weekendHeaderTextColor: Color? = null,
+    /** Shows an ISO week-number badge in the time-column header when [numberOfVisibleDays] > 1. */
+    val showWeekNumber: Boolean = false,
+    /** Text color of the week-number badge. */
+    val weekNumberTextColor: Color = Color.White,
+    /** Text size of the week-number badge. */
+    val weekNumberTextSizeSp: TextUnit = 12.sp,
+    /** Background color of the week-number badge. */
+    val weekNumberBackgroundColor: Color = Color(0xFFD3D3D3),
+    /** Corner radius of the week-number badge background. */
+    val weekNumberBackgroundCornerRadiusDp: Dp = 8.dp,
+    /** Draws a horizontal line along the bottom edge of the header. */
+    val showHeaderBottomLine: Boolean = false,
+    /** Color of the header bottom line. */
+    val headerBottomLineColor: Color = Color(0x1A000000),
+    /** Stroke width of the header bottom line. */
+    val headerBottomLineWidthDp: Dp = 1.dp,
+    /** Draws a soft shadow below the header background. */
+    val showHeaderBottomShadow: Boolean = false,
+    /** Color of the header bottom shadow. */
+    val headerBottomShadowColor: Color = Color(0x66000000),
+    /** Blur radius of the header bottom shadow. */
+    val headerBottomShadowRadiusDp: Dp = 2.dp,
     /** Background of the time column. */
     val timeColumnBackgroundColor: Color = Color(0xFFF5F5F5),
     /** Color of hour labels in the time column. */
     val timeColumnTextColor: Color = Color(0xFF757575),
+    /** Text size of hour labels in the time column. */
+    val timeColumnTextSizeSp: TextUnit = 11.sp,
     /** Background for day columns before the current time (non-today). */
     val pastDayBackgroundColor: Color = Color(0xFFF7F7F7),
     /** Background for day columns after the current time (non-today). */

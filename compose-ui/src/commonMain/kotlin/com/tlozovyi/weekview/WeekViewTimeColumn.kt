@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 @Composable
 internal fun WeekViewTimeColumn(
@@ -65,7 +64,8 @@ internal fun WeekViewTimeColumn(
                         text = timeFormatter(hour),
                         modifier = Modifier.padding(end = style.timeColumnPaddingDp),
                         color = style.timeColumnTextColor,
-                        fontSize = 11.sp,
+                        fontSize = style.timeColumnTextSizeSp,
+                        fontFamily = style.fontFamily,
                         textAlign = TextAlign.End,
                         maxLines = 1,
                     )

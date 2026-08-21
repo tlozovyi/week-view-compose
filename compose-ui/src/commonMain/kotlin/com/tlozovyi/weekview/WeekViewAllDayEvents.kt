@@ -16,8 +16,8 @@
 
 package com.tlozovyi.weekview
 
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -53,10 +53,7 @@ internal fun DrawScope.drawWeekViewAllDayEventChips(
     val paddingHorizontalPx = style.eventPaddingHorizontalDp.toPx(density)
     val paddingVerticalPx = style.allDayEventPaddingVerticalDp.toPx(density)
     val defaultCornerRadiusPx = style.eventCornerRadiusDp.toPx()
-    val textStyle = TextStyle(
-        color = style.defaultEventTextColor,
-        fontSize = style.allDayEventTextSizeSp,
-    )
+    val textStyle = style.allDayEventTextStyle(style.defaultEventTextColor)
     val calculator = EventChipBoundsCalculator(boundsLayout, style, density)
 
     renderDates.forEachIndexed { dateIndex, date ->
@@ -121,15 +118,18 @@ private fun DrawScope.drawAllDayEventChip(
     val entity = eventChip.event
     val width = bounds.width()
     val height = bounds.height()
+    val rect = Rect(bounds.left, bounds.top, bounds.right, bounds.bottom)
     val cornerRadiusPx = (entity.style.cornerRadius?.toFloat() ?: defaultCornerRadiusPx)
     val backgroundColor = entity.style.backgroundColor?.toComposeColor()
         ?: style.defaultEventBackgroundColor
 
-    drawRoundRect(
-        color = backgroundColor,
-        topLeft = Offset(bounds.left, bounds.top),
-        size = Size(width, height),
-        cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
+    drawEventChipBackground(
+        bounds = rect,
+        cornerRadiusPx = cornerRadiusPx,
+        backgroundColor = backgroundColor,
+        pattern = entity.style.pattern,
+        eventChip = eventChip,
+        entity = entity,
     )
 
     val borderWidth = entity.style.borderWidth?.toFloat()
@@ -137,13 +137,13 @@ private fun DrawScope.drawAllDayEventChip(
         val borderColor = entity.style.borderColor?.toComposeColor()
             ?: style.defaultEventBorderColor
             ?: backgroundColor
-        val inset = borderWidth / 2f
-        drawRoundRect(
-            color = borderColor,
-            topLeft = Offset(bounds.left + inset, bounds.top + inset),
-            size = Size(width - borderWidth, height - borderWidth),
-            cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
-            style = Stroke(width = borderWidth),
+        drawEventChipBorder(
+            bounds = rect,
+            cornerRadiusPx = cornerRadiusPx,
+            borderWidth = borderWidth,
+            borderColor = borderColor,
+            eventChip = eventChip,
+            entity = entity,
         )
     }
 
@@ -153,7 +153,7 @@ private fun DrawScope.drawAllDayEventChip(
         return
     }
 
-    val chipTextStyle = entity.style.textColor?.toComposeColor()?.let { textStyle.copy(color = it) }
+    val chipTextStyle = entity.style.textColor?.toComposeColor()?.let { style.allDayEventTextStyle(it) }
         ?: textStyle
 
     val textLayoutResult = fitAllDayEventChipText(

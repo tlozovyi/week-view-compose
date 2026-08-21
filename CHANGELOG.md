@@ -2,7 +2,7 @@
 
 ## 0.10.0-beta
 
-Programmatic scroll API matching View library `scrollToDate` / `scrollToTime` / `scrollToDateTime`.
+Programmatic scroll API and visual polish matching the View library styling surface.
 
 ### Added
 
@@ -13,6 +13,14 @@ Programmatic scroll API matching View library `scrollToDate` / `scrollToTime` / 
 - 300ms animated scroll (instant when `animated = false`)
 - Unit tests for scroll target math and date clamping
 - Sample **Today** button using `scrollToDateTime`
+- Weekend column backgrounds: **`pastWeekendBackgroundColor`**, **`futureWeekendBackgroundColor`**, **`weekendHeaderTextColor`**
+- ISO week-number badge: **`showWeekNumber`**, **`weekNumberTextColor`**, **`weekNumberTextSizeSp`**, **`weekNumberBackgroundColor`**, **`weekNumberBackgroundCornerRadiusDp`**
+- Header decorations: **`showHeaderBottomLine`**, **`headerBottomLineColor`**, **`headerBottomLineWidthDp`**, **`showHeaderBottomShadow`**, **`headerBottomShadowColor`**, **`headerBottomShadowRadiusDp`**
+- Per-event fill patterns via **`WeekViewFillPattern.Lined`** / **`WeekViewFillPattern.Dotted`** on **`WeekViewEventStyle`**
+- Multi-day timed event corner flattening (continued events square off top/bottom corners per day slice)
+- Shared typography: **`fontFamily`**, **`headerFontWeight`**, **`headerTextSizeSp`**, **`timeColumnTextSizeSp`**
+- Unit tests for weekend colors, week number, and pattern mapping
+- Sample **7 days · snap** mode demonstrates week number, header line/shadow, weekend colors, and sans-serif font
 
 ## 0.9.0-beta
 

@@ -16,6 +16,8 @@
 
 package com.tlozovyi.weekview.sample
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import com.tlozovyi.weekview.WeekViewStyle
 import kotlinx.datetime.DayOfWeek
 
@@ -46,6 +48,13 @@ internal enum class SampleViewMode(
             horizontalScrollSnapEnabled = true,
             adaptiveEventTextSize = true,
             firstDayOfWeek = DayOfWeek.MONDAY,
+            showWeekNumber = true,
+            showHeaderBottomLine = true,
+            showHeaderBottomShadow = true,
+            pastWeekendBackgroundColor = Color(0xFFF3F0FF),
+            futureWeekendBackgroundColor = Color(0xFFF8F6FF),
+            weekendHeaderTextColor = Color(0xFF5E35B1),
+            fontFamily = FontFamily.SansSerif,
         ),
     ),
     SevenDayFreeScroll(

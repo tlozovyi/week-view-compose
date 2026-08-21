@@ -17,6 +17,8 @@
 package com.tlozovyi.weekview.sample
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.tlozovyi.weekview.WeekViewFillPattern
 import com.tlozovyi.weekview.WeekViewBlockedTime
 import com.tlozovyi.weekview.WeekViewEvent
 import com.tlozovyi.weekview.WeekViewEventStyle
@@ -427,6 +429,13 @@ internal fun sampleBlockedTimes(today: LocalDate): List<WeekViewBlockedTime> {
             startTime = today.atTime(12, 0),
             endTime = today.atTime(13, 0),
             title = "Lunch break",
+            style = WeekViewEventStyle(
+                pattern = WeekViewFillPattern.Lined(
+                    color = Color(0x66757575),
+                    strokeWidthDp = 1.dp,
+                    spacingDp = 6.dp,
+                ),
+            ),
         ),
         WeekViewBlockedTime(
             id = 9002,

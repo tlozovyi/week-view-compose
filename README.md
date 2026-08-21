@@ -4,7 +4,7 @@
 
 Compose Multiplatform calendar week view for **Android** and **iOS**.
 
-**Status:** `0.10.0-beta` — calendar grid, event chips, blocked time, gestures, programmatic scroll (`WeekViewScrollState`), horizontal page snap, all-day events, pinch-to-zoom, and drag-and-drop.
+**Status:** `0.10.0-beta` — calendar grid, event chips, blocked time, gestures, programmatic scroll (`WeekViewScrollState`), horizontal page snap, all-day events, pinch-to-zoom, drag-and-drop, and visual polish (weekend colors, week number, header line/shadow, fill patterns, multi-day corners, fonts).
 
 ## Features
 
@@ -20,8 +20,8 @@ Compose Multiplatform calendar week view for **Android** and **iOS**.
 - Pinch-to-zoom hour row height
 - Long-press drag-and-drop to move timed events (15-minute snap, edge auto-scroll)
 - Current-time indicator line and dot
-- Per-event styling via `WeekViewEventStyle`
-- Extensive theming via `WeekViewStyle`
+- Per-event styling via `WeekViewEventStyle` (colors, borders, corner radius, lined/dotted fill patterns)
+- Extensive theming via `WeekViewStyle` (weekend backgrounds, week-number badge, header line/shadow, shared `fontFamily`)
 - Shared layout algorithms in a platform-agnostic `common` module (`kotlinx-datetime`)
 - Written in Kotlin
 

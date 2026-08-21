@@ -33,10 +33,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.sp
 import kotlinx.datetime.number
 
 @Composable
@@ -59,15 +57,15 @@ internal fun WeekViewHeader(
 ) {
     val density = LocalDensity.current
     val paddingHorizontalPx = with(density) { style.headerPaddingDp.toPx() }
-    val dateLabelTextStyle = TextStyle(
-        color = style.headerTextColor,
-        fontSize = 12.sp,
-    )
     val measuredLabels = remember(
         layout.renderDates,
         layout.dayWidthPx,
         dateFormatter,
         style.headerTextColor,
+        style.weekendHeaderTextColor,
+        style.headerTextSizeSp,
+        style.fontFamily,
+        style.headerFontWeight,
         textMeasurer,
     ) {
         layout.renderDates.map { date ->
@@ -78,6 +76,8 @@ internal fun WeekViewHeader(
                 date.dayOfMonth,
                 dayOfWeekIndex(date),
             )
+            val labelColor = style.headerDateColor(date)
+            val dateLabelTextStyle = style.headerDateTextStyle(labelColor)
             if (columnWidth <= 0f) {
                 null
             } else {
@@ -93,12 +93,16 @@ internal fun WeekViewHeader(
         }
     }
 
-    Row(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(with(density) { layout.headerHeightPx.toDp() })
-            .background(style.headerBackgroundColor),
+            .height(with(density) { layout.headerHeightPx.toDp() }),
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(style.headerBackgroundColor),
+        ) {
         Box(
             modifier = Modifier
                 .width(style.timeColumnWidthDp)
@@ -116,6 +120,20 @@ internal fun WeekViewHeader(
                         layout = layout,
                         style = style,
                         allDayExpandProgress = allDayExpandProgress,
+                    )
+                }
+            }
+            if (style.showWeekNumber && style.numberOfVisibleDays > 1) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(with(density) { layout.dateLabelHeightPx.toDp() }),
+                ) {
+                    drawWeekNumberBadge(
+                        style = style,
+                        layout = layout,
+                        firstVisibleDate = layout.renderDates.first(),
+                        textMeasurer = textMeasurer,
                     )
                 }
             }
@@ -174,6 +192,12 @@ internal fun WeekViewHeader(
                         )
                     }
                 }
+            }
+        }
+        }
+        if (style.showHeaderBottomLine || style.showHeaderBottomShadow) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawHeaderBottomDecorations(style = style)
             }
         }
     }

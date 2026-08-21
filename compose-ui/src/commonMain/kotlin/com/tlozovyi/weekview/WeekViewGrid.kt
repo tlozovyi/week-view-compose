@@ -53,8 +53,8 @@ private fun DrawScope.drawDayBackgrounds(
 
         when {
             date == today -> drawTodayBackground(left, top, size, layout, style)
-            date < today -> drawRect(style.pastDayBackgroundColor, Offset(left, top), size)
-            else -> drawRect(style.futureDayBackgroundColor, Offset(left, top), size)
+            date < today -> drawRect(style.pastDayBackground(date), Offset(left, top), size)
+            else -> drawRect(style.futureDayBackground(date), Offset(left, top), size)
         }
     }
 }

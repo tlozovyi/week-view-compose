@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.Dp
  * @property borderColor Stroke color when [borderWidthDp] is set.
  * @property borderWidthDp Stroke width; no border when `null` or zero.
  * @property cornerRadiusDp Corner radius of the rounded rectangle.
+ * @property pattern Optional lined or dotted overlay on the chip background.
  */
 @PublicApi
 data class WeekViewEventStyle(
@@ -38,6 +39,7 @@ data class WeekViewEventStyle(
     val borderColor: Color? = null,
     val borderWidthDp: Dp? = null,
     val cornerRadiusDp: Dp? = null,
+    val pattern: WeekViewFillPattern? = null,
 )
 
 internal fun WeekViewEventStyle?.toEntityStyle(
@@ -51,6 +53,7 @@ internal fun WeekViewEventStyle?.toEntityStyle(
         borderColor = eventStyle?.borderColor?.toArgbLong() ?: style.defaultEventBorderColor?.toArgbLong(),
         borderWidth = eventStyle?.borderWidthDp?.let { with(density) { it.roundToPx() } },
         cornerRadius = eventStyle?.cornerRadiusDp?.let { with(density) { it.roundToPx() } },
+        pattern = eventStyle?.pattern?.toEntityPattern(density),
     )
 }
 
@@ -65,6 +68,7 @@ internal fun WeekViewEventStyle?.toBlockedTimeEntityStyle(
         borderColor = blockedStyle?.borderColor?.toArgbLong() ?: style.defaultBlockedTimeBorderColor?.toArgbLong(),
         borderWidth = blockedStyle?.borderWidthDp?.let { with(density) { it.roundToPx() } },
         cornerRadius = blockedStyle?.cornerRadiusDp?.let { with(density) { it.roundToPx() } },
+        pattern = blockedStyle?.pattern?.toEntityPattern(density),
     )
 }
 

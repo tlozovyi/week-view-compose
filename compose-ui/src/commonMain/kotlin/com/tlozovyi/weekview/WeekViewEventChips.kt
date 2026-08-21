@@ -22,12 +22,10 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
 internal fun DrawScope.drawWeekViewEventChips(
@@ -42,10 +40,7 @@ internal fun DrawScope.drawWeekViewEventChips(
     val paddingHorizontalPx = style.eventPaddingHorizontalDp.toPx(density)
     val paddingVerticalPx = style.eventPaddingVerticalDp.toPx(density)
     val defaultCornerRadiusPx = style.eventCornerRadiusDp.toPx()
-    val textStyle = TextStyle(
-        color = style.defaultEventTextColor,
-        fontSize = style.eventTextSizeSp,
-    )
+    val textStyle = style.eventTextStyle(style.defaultEventTextColor)
 
     for (eventChip in eventChips) {
         if (eventChip.isHidden || eventChip.bounds.isEmpty()) {
@@ -130,13 +125,15 @@ private fun DrawScope.drawEventChip(
                 ?: style.defaultBlockedTimeBackgroundColor
             else -> entity.style.backgroundColor?.toComposeColor()
                 ?: style.defaultEventBackgroundColor
-        }
+        }.eventChipDrawColor(isDragging)
 
-        drawRoundRect(
-            color = backgroundColor.eventChipDrawColor(isDragging),
-            topLeft = Offset(rect.left, rect.top),
-            size = Size(rect.width, rect.height),
-            cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
+        drawEventChipBackground(
+            bounds = rect,
+            cornerRadiusPx = cornerRadiusPx,
+            backgroundColor = backgroundColor,
+            pattern = entity.style.pattern,
+            eventChip = eventChip,
+            entity = entity,
         )
 
         val borderWidth = entity.style.borderWidth?.toFloat()
@@ -144,13 +141,13 @@ private fun DrawScope.drawEventChip(
             val borderColor = entity.style.borderColor?.toComposeColor()
                 ?: style.defaultEventBorderColor
                 ?: backgroundColor
-            val inset = borderWidth / 2f
-            drawRoundRect(
-                color = borderColor,
-                topLeft = Offset(rect.left + inset, rect.top + inset),
-                size = Size(rect.width - borderWidth, rect.height - borderWidth),
-                cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
-                style = Stroke(width = borderWidth),
+            drawEventChipBorder(
+                bounds = rect,
+                cornerRadiusPx = cornerRadiusPx,
+                borderWidth = borderWidth,
+                borderColor = borderColor,
+                eventChip = eventChip,
+                entity = entity,
             )
         }
 
@@ -161,9 +158,9 @@ private fun DrawScope.drawEventChip(
         }
 
         val chipTextStyle = when {
-            isBlockedTime -> entity.style.textColor?.toComposeColor()?.let { textStyle.copy(color = it) }
-                ?: textStyle.copy(color = style.defaultBlockedTimeTextColor)
-            else -> entity.style.textColor?.toComposeColor()?.let { textStyle.copy(color = it) }
+            isBlockedTime -> entity.style.textColor?.toComposeColor()?.let { style.eventTextStyle(it) }
+                ?: style.eventTextStyle(style.defaultBlockedTimeTextColor)
+            else -> entity.style.textColor?.toComposeColor()?.let { style.eventTextStyle(it) }
                 ?: textStyle
         }
 
