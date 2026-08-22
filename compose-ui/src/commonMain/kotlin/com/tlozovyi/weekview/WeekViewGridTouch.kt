@@ -30,11 +30,13 @@ internal fun resolveGridTap(
     horizontalTranslationPx: Float,
     displayGridLayout: WeekViewLayout,
     style: WeekViewStyle,
+    gridScrollOffsetPx: Float,
     onEventClick: ((WeekViewEvent) -> Unit)?,
     onEmptyViewClick: ((LocalDateTime) -> Unit)?,
 ) {
     val contentX = offset.x - horizontalTranslationPx
-    val event = eventChips.findEventAt(x = contentX, y = offset.y)
+    val contentY = offset.y + gridScrollOffsetPx
+    val event = eventChips.findEventAt(x = contentX, y = contentY)
     if (event != null) {
         onEventClick?.invoke(event)
         return
@@ -46,6 +48,7 @@ internal fun resolveGridTap(
         layout = displayGridLayout,
         style = style,
         horizontalTranslationPx = horizontalTranslationPx,
+        gridScrollOffsetPx = gridScrollOffsetPx,
     )
     if (time != null) {
         onEmptyViewClick?.invoke(time)
@@ -58,12 +61,14 @@ internal fun resolveGridLongPress(
     horizontalTranslationPx: Float,
     displayGridLayout: WeekViewLayout,
     style: WeekViewStyle,
+    gridScrollOffsetPx: Float,
     dragEnabled: Boolean,
     onEventLongClick: ((WeekViewEvent) -> Boolean)?,
     onEmptyViewLongClick: ((LocalDateTime) -> Unit)?,
 ): WeekViewGridLongPressResult {
     val contentX = offset.x - horizontalTranslationPx
-    val event = eventChips.findEventAt(x = contentX, y = offset.y)
+    val contentY = offset.y + gridScrollOffsetPx
+    val event = eventChips.findEventAt(x = contentX, y = contentY)
     if (event != null) {
         val handled = onEventLongClick?.invoke(event) == true
         return WeekViewGridLongPressResult(
@@ -78,6 +83,7 @@ internal fun resolveGridLongPress(
         layout = displayGridLayout,
         style = style,
         horizontalTranslationPx = horizontalTranslationPx,
+        gridScrollOffsetPx = gridScrollOffsetPx,
     )
     if (time != null) {
         onEmptyViewLongClick?.invoke(time)

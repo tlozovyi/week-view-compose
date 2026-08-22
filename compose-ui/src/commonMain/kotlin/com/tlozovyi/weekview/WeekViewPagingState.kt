@@ -78,11 +78,30 @@ class WeekViewPagingState internal constructor() {
         displayedEvents = controller.items
     }
 
+    /**
+     * Ensures events for the visible month window around [firstVisibleDate] are loaded.
+     *
+     * Called automatically by [WeekView] on first layout and when the visible date range changes.
+     * Apps can call this manually when they need to prefetch before the user scrolls.
+     */
+    fun ensureLoaded(
+        firstVisibleDate: LocalDate,
+        numberOfVisibleDays: Int,
+        isLtr: Boolean = true,
+    ) {
+        val rangeStart = visibleDateRange(
+            firstVisibleDate = firstVisibleDate,
+            numberOfVisibleDays = numberOfVisibleDays,
+            isLtr = isLtr,
+        ).first
+        controller.onScrollSettled(rangeStart)
+        displayedEvents = controller.items
+    }
+
     internal fun onScrollSettled(
         firstVisibleDate: LocalDate,
         lastVisibleDate: LocalDate,
     ) {
-        controller.onScrollSettled(firstVisibleDate)
         displayedEvents = controller.items
         if (lastNotifiedFirstVisibleDate != firstVisibleDate) {
             lastNotifiedFirstVisibleDate = firstVisibleDate

@@ -32,4 +32,27 @@ class WeekViewPagingStateTest {
         assertEquals(LocalDate(2026, 8, 19), range.first)
         assertEquals(LocalDate(2026, 8, 21), range.second)
     }
+
+    @Test
+    fun ensureLoaded_requestsMissingMonthsWithoutWaitingForScrollSettlement() {
+        val requestedRanges = mutableListOf<Pair<LocalDate, LocalDate>>()
+        val state = WeekViewPagingState()
+        state.updateCallbacks(
+            onLoadMore = { start, end, submit ->
+                requestedRanges += start to end
+                submit(emptyList())
+            },
+            onRangeChanged = null,
+        )
+
+        state.ensureLoaded(
+            firstVisibleDate = LocalDate(2026, 8, 21),
+            numberOfVisibleDays = 3,
+            isLtr = true,
+        )
+
+        assertEquals(1, requestedRanges.size)
+        assertEquals(LocalDate(2026, 7, 1), requestedRanges.single().first)
+        assertEquals(LocalDate(2026, 9, 30), requestedRanges.single().second)
+    }
 }

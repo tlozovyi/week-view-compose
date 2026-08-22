@@ -121,6 +121,7 @@ internal fun WeekViewGestureScope.bindEventDragGestures(
     eventChips = eventChipsProvider()
     horizontalTranslationPx = horizontalTranslationPxProvider()
     displayGridLayout = displayGridLayoutProvider()
+    gridScrollOffsetPx = gridScrollOffsetPxProvider()
     style = styleProvider()
     this.tapEnabled = tapEnabled
     this.longPressEnabled = longPressEnabled
@@ -139,6 +140,7 @@ internal fun WeekViewGestureScope.bindEventDragGestures(
             layout = layout,
             style = styleProvider(),
             horizontalTranslationPx = horizontalTranslationPxProvider(),
+            gridScrollOffsetPx = gridScrollOffsetPxProvider(),
         ) ?: event.startTime
         onDragStateChange(
             WeekViewDragState(
@@ -160,6 +162,7 @@ internal fun WeekViewGestureScope.bindEventDragGestures(
             layout = displayGridLayoutProvider(),
             style = styleProvider(),
             horizontalTranslationPx = horizontalTranslationPxProvider(),
+            gridScrollOffsetPx = gridScrollOffsetPxProvider(),
         ) ?: return@move
 
         val newStart = sanitizeEventStartToQuarterHour(

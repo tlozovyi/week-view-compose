@@ -30,9 +30,11 @@ internal class WeekViewGestureScope {
     var onHorizontalScrollStart: () -> Unit = {}
     var onHorizontalScrollEnd: () -> Unit = {}
     var isPinchBlocked: () -> Boolean = { false }
+    var isTapBlocked: () -> Boolean = { false }
     var eventChips: List<EventChip> = emptyList()
     var horizontalTranslationPx: Float = 0f
     var displayGridLayout: WeekViewLayout? = null
+    var gridScrollOffsetPx: Float = 0f
     var style: WeekViewStyle = WeekViewStyle.Default
     var tapEnabled: Boolean = false
     var longPressEnabled: Boolean = false

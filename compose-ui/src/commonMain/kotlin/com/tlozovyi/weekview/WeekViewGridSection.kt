@@ -35,7 +35,6 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import kotlinx.datetime.LocalDate
-import kotlin.math.abs
 
 @Composable
 internal fun WeekViewGridSection(
@@ -65,13 +64,8 @@ internal fun WeekViewGridSection(
     onPinchEnd: (Float) -> Unit,
 ) {
     val layoutGridHeightPx = with(density) { layoutHeightPx(gridLayout.gridHeightPx) }
-    val resolvedDisplayLayout = if (abs(layoutGridHeightPx - gridLayout.gridHeightPx) < 0.5f) {
-        displayGridLayout
-    } else {
-        gridLayout.copy(
-            hourHeightPx = layoutGridHeightPx / style.hoursCount,
-            gridHeightPx = layoutGridHeightPx,
-        )
+    val resolvedDisplayLayout = with(density) {
+        resolveDisplayGridLayout(gridLayout, style)
     }
 
     val gridScrollModifier = Modifier

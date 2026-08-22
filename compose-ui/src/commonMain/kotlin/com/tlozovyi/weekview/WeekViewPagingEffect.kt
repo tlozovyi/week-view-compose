@@ -32,6 +32,14 @@ internal fun WeekViewPagingEffect(
         return
     }
 
+    LaunchedEffect(pagingState, firstVisibleDate, numberOfVisibleDays, isLtr) {
+        pagingState.ensureLoaded(
+            firstVisibleDate = firstVisibleDate,
+            numberOfVisibleDays = numberOfVisibleDays,
+            isLtr = isLtr,
+        )
+    }
+
     LaunchedEffect(pagingState, settlementGeneration, firstVisibleDate, numberOfVisibleDays, isLtr) {
         val (rangeStart, rangeEnd) = visibleDateRange(
             firstVisibleDate = firstVisibleDate,

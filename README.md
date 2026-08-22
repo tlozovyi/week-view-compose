@@ -4,7 +4,7 @@
 
 Compose Multiplatform calendar week view for **Android** and **iOS**.
 
-**Status:** `1.0.0-rc1` — calendar grid, event chips, blocked time, gestures, programmatic scroll, month-based paging, visual polish, and RTL layout via `LocalLayoutDirection`.
+**Status:** `1.0.0-rc2` — calendar grid, event chips, blocked time, gestures, programmatic scroll, month-based paging, visual polish, and RTL layout via `LocalLayoutDirection`.
 
 ## Features
 
@@ -32,11 +32,11 @@ Compose Multiplatform calendar week view for **Android** and **iOS**.
 - Emoji support in event titles
 - Accessibility
 
-## Versions (1.0.0-rc1)
+## Versions (1.0.0-rc2)
 
 | | |
 |---|---|
-| **Release** | 1.0.0-rc1 |
+| **Release** | 1.0.0-rc2 |
 | **minSdk (Android)** | 24 |
 | **compileSdk / targetSdk** | 35 |
 | **Kotlin** | 2.1.20 |
@@ -74,7 +74,7 @@ repositories {
 
 ```kotlin
 // commonMain (Kotlin Multiplatform)
-implementation("com.github.tlozovyi.week-view-compose:compose-ui:1.0.0-rc1")
+implementation("com.github.tlozovyi.week-view-compose:compose-ui:1.0.0-rc2")
 ```
 
 When building from source, add both modules to your project:

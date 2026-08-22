@@ -31,6 +31,13 @@ import kotlinx.datetime.atTime
 class WeekViewGridTouchTest {
 
     @Test
+    fun shouldCancelGridTapWait_whenSecondPointerIsDownOrTapBlocked() {
+        assertTrue(shouldCancelGridTapWait(pressedPointerCount = 2, tapBlocked = false))
+        assertTrue(shouldCancelGridTapWait(pressedPointerCount = 1, tapBlocked = true))
+        assertFalse(shouldCancelGridTapWait(pressedPointerCount = 1, tapBlocked = false))
+    }
+
+    @Test
     fun findEventAtIgnoresBlockedTimeChips() {
         val date = LocalDate(2026, 8, 20)
         val blockedChip = blockedTimeChip(
@@ -57,6 +64,24 @@ class WeekViewGridTouchTest {
     }
 
     @Test
+    fun calculateTimeFromPoint_accountsForVerticalScrollOffset() {
+        val layout = sampleGridLayout()
+        val time = calculateTimeFromPoint(
+            touchX = 60f,
+            touchY = 50f,
+            layout = layout,
+            style = WeekViewStyle.Default,
+            horizontalTranslationPx = 0f,
+            gridScrollOffsetPx = 100f,
+        )
+
+        assertEquals(
+            LocalDateTime(date = LocalDate(2026, 8, 20), time = kotlinx.datetime.LocalTime(3, 0)),
+            time,
+        )
+    }
+
+    @Test
     fun resolveGridTapFallsThroughBlockedTimeToEmptyClick() {
         var tappedTime: LocalDateTime? = null
         val layout = sampleGridLayout()
@@ -68,11 +93,34 @@ class WeekViewGridTouchTest {
             horizontalTranslationPx = 0f,
             displayGridLayout = layout,
             style = WeekViewStyle.Default,
+            gridScrollOffsetPx = 0f,
             onEventClick = null,
             onEmptyViewClick = { tappedTime = it },
         )
 
         assertEquals(LocalDateTime(date = LocalDate(2026, 8, 20), time = kotlinx.datetime.LocalTime(3, 0)), tappedTime)
+    }
+
+    @Test
+    fun resolveGridTapPrefersEventOverEmptyClickWhenChipIsHit() {
+        var tappedEvent: WeekViewEvent? = null
+        var tappedTime: LocalDateTime? = null
+        val date = LocalDate(2026, 8, 20)
+        val chip = sampleEventChip(id = 1, date = date, left = 10f, top = 120f, right = 80f, bottom = 180f)
+
+        resolveGridTap(
+            offset = Offset(40f, 150f),
+            eventChips = listOf(chip),
+            horizontalTranslationPx = 0f,
+            displayGridLayout = sampleGridLayout(),
+            style = WeekViewStyle.Default,
+            gridScrollOffsetPx = 0f,
+            onEventClick = { tappedEvent = it },
+            onEmptyViewClick = { tappedTime = it },
+        )
+
+        assertEquals(chip.toWeekViewEvent(), tappedEvent)
+        assertNull(tappedTime)
     }
 
     @Test
@@ -88,6 +136,7 @@ class WeekViewGridTouchTest {
             horizontalTranslationPx = 0f,
             displayGridLayout = layout,
             style = WeekViewStyle.Default,
+            gridScrollOffsetPx = 0f,
             dragEnabled = true,
             onEventLongClick = { false },
             onEmptyViewLongClick = null,
@@ -108,6 +157,7 @@ class WeekViewGridTouchTest {
             horizontalTranslationPx = 0f,
             displayGridLayout = sampleGridLayout(),
             style = WeekViewStyle.Default,
+            gridScrollOffsetPx = 0f,
             dragEnabled = true,
             onEventLongClick = { true },
             onEmptyViewLongClick = null,

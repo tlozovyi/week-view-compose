@@ -62,7 +62,13 @@ internal fun WeekViewStyle.weekNumberTextStyle(): TextStyle {
     )
 }
 
-internal fun WeekViewStyle.headerDateColor(date: kotlinx.datetime.LocalDate): Color {
+internal fun WeekViewStyle.headerDateColor(
+    date: kotlinx.datetime.LocalDate,
+    today: kotlinx.datetime.LocalDate,
+): Color {
+    if (date == today) {
+        return todayHeaderTextColor ?: headerTextColor
+    }
     return if (date.isWeekend()) {
         weekendHeaderTextColor ?: headerTextColor
     } else {

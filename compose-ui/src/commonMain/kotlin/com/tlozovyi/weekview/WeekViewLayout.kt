@@ -58,6 +58,25 @@ internal data class WeekViewLayout(
 /** Matches Compose layout height after the px → dp → px round-trip used by [Modifier.height]. */
 internal fun Density.layoutHeightPx(heightPx: Float): Float = heightPx.toDp().toPx()
 
+/**
+ * Grid layout aligned with how [Modifier.height] snaps heights, so drawing and hit-testing share
+ * the same hour-row scale after pinch-to-zoom.
+ */
+internal fun Density.resolveDisplayGridLayout(
+    gridLayout: WeekViewLayout,
+    style: WeekViewStyle,
+): WeekViewLayout {
+    val layoutGridHeightPx = layoutHeightPx(gridLayout.gridHeightPx)
+    return if (kotlin.math.abs(layoutGridHeightPx - gridLayout.gridHeightPx) < 0.5f) {
+        gridLayout
+    } else {
+        gridLayout.copy(
+            hourHeightPx = layoutGridHeightPx / style.hoursCount,
+            gridHeightPx = layoutGridHeightPx,
+        )
+    }
+}
+
 internal fun calculateWeekViewLayout(
     viewportWidthPx: Float,
     viewportHeightPx: Float,

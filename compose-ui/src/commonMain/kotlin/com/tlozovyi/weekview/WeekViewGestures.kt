@@ -56,6 +56,11 @@ internal fun Modifier.weekViewGridScroll(
         }
     }
 
+internal fun shouldCancelGridTapWait(
+    pressedPointerCount: Int,
+    tapBlocked: Boolean,
+): Boolean = pressedPointerCount >= 2 || tapBlocked
+
 internal fun Modifier.weekViewPinchZoom(
     enabled: Boolean,
     gestureScope: WeekViewGestureScope,
@@ -128,6 +133,16 @@ internal fun Modifier.weekViewPinchZoom(
                 config = zoomConfig(),
             )
             onPinchStep(finalHourHeightPx)
+
+            do {
+                event.changes.forEach { change ->
+                    if (change.pressed) {
+                        change.consume()
+                    }
+                }
+                event = awaitPointerEvent(PointerEventPass.Initial)
+            } while (event.changes.any { it.pressed })
+
             onPinchEnd(finalHourHeightPx)
         }
     }
@@ -291,6 +306,9 @@ internal fun Modifier.weekViewTimedEventGestures(
 
     return pointerInput(gestureScope) {
         awaitEachGesture {
+            if (gestureScope.isTapBlocked()) {
+                return@awaitEachGesture
+            }
             if (!gestureScope.tapEnabled && !gestureScope.longPressEnabled) {
                 return@awaitEachGesture
             }
@@ -303,6 +321,13 @@ internal fun Modifier.weekViewTimedEventGestures(
             val releasedBeforeLongPress = withTimeoutOrNull(longPressTimeoutMillis) {
                 while (true) {
                     val event = awaitPointerEvent(PointerEventPass.Main)
+                    if (shouldCancelGridTapWait(
+                            pressedPointerCount = event.changes.count { it.pressed },
+                            tapBlocked = gestureScope.isTapBlocked(),
+                        )
+                    ) {
+                        return@withTimeoutOrNull false
+                    }
                     val change = event.changes.firstOrNull { it.id == pointerId } ?: return@withTimeoutOrNull false
                     if (!change.pressed) {
                         return@withTimeoutOrNull true
@@ -314,25 +339,31 @@ internal fun Modifier.weekViewTimedEventGestures(
             }
 
             when {
-                releasedBeforeLongPress == true && gestureScope.tapEnabled -> {
+                releasedBeforeLongPress == true &&
+                    gestureScope.tapEnabled &&
+                    !gestureScope.isTapBlocked() -> {
                     resolveGridTap(
                         offset = down.position,
                         eventChips = gestureScope.eventChips,
                         horizontalTranslationPx = gestureScope.horizontalTranslationPx,
                         displayGridLayout = layout,
                         style = gestureScope.style,
+                        gridScrollOffsetPx = gestureScope.gridScrollOffsetPx,
                         onEventClick = gestureScope.onEventClick,
                         onEmptyViewClick = gestureScope.onEmptyViewClick,
                     )
                 }
 
-                releasedBeforeLongPress == null && gestureScope.longPressEnabled -> {
+                releasedBeforeLongPress == null &&
+                    gestureScope.longPressEnabled &&
+                    !gestureScope.isTapBlocked() -> {
                     val longPressResult = resolveGridLongPress(
                         offset = down.position,
                         eventChips = gestureScope.eventChips,
                         horizontalTranslationPx = gestureScope.horizontalTranslationPx,
                         displayGridLayout = layout,
                         style = gestureScope.style,
+                        gridScrollOffsetPx = gestureScope.gridScrollOffsetPx,
                         dragEnabled = gestureScope.dragEnabled,
                         onEventLongClick = gestureScope.onEventLongClick,
                         onEmptyViewLongClick = gestureScope.onEmptyViewLongClick,
@@ -340,7 +371,7 @@ internal fun Modifier.weekViewTimedEventGestures(
                     if (longPressResult.shouldStartDrag) {
                         val event = gestureScope.eventChips.findEventAt(
                             x = down.position.x - gestureScope.horizontalTranslationPx,
-                            y = down.position.y,
+                            y = down.position.y + gestureScope.gridScrollOffsetPx,
                         )
                         if (event != null) {
                             gestureScope.onDragStart(event, down.position)

@@ -89,8 +89,10 @@ internal fun calculateTimeFromPoint(
     layout: WeekViewLayout,
     style: WeekViewStyle,
     horizontalTranslationPx: Float,
+    gridScrollOffsetPx: Float = 0f,
 ): LocalDateTime? {
     val contentX = touchX - horizontalTranslationPx
+    val contentY = touchY + gridScrollOffsetPx
 
     layout.renderDates.forEachIndexed { dateIndex, date ->
         val dayStartX = layout.dayStartX(dateIndex)
@@ -104,8 +106,8 @@ internal fun calculateTimeFromPoint(
             return null
         }
 
-        val hourOffset = (touchY / hourHeightPx).toInt()
-        val pixelsFromFullHour = touchY - hourOffset * hourHeightPx
+        val hourOffset = (contentY / hourHeightPx).toInt()
+        val pixelsFromFullHour = contentY - hourOffset * hourHeightPx
         val minutes = ((pixelsFromFullHour / hourHeightPx) * 60).toInt()
 
         return LocalDateTime(

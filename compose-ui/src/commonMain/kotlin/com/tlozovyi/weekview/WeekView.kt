@@ -77,6 +77,8 @@ import kotlinx.datetime.todayIn
  *   its snapped start/end times. Requires [WeekViewStyle.dragAndDropEnabled].
  * @param scrollState Optional controller for programmatic scroll commands ([scrollToDate],
  *   [scrollToTime], [scrollToDateTime]). Create with [rememberWeekViewScrollState].
+ * @param onHourHeightChanged Called when the user finishes a pinch-to-zoom gesture with the new
+ *   hour row height. Use this to persist zoom level across sessions.
  * @param dateFormatter Formats date labels in the header row.
  * @param timeFormatter Formats hour labels in the time column.
  */
@@ -96,6 +98,7 @@ fun WeekView(
     onEmptyViewLongClick: ((LocalDateTime) -> Unit)? = null,
     onEventDrop: ((WeekViewEvent, LocalDateTime, LocalDateTime) -> Unit)? = null,
     scrollState: WeekViewScrollState? = null,
+    onHourHeightChanged: ((Dp) -> Unit)? = null,
     dateFormatter: DateFormatter = { year, month, day, dayOfWeek ->
         defaultDateFormatter(year, month, day, dayOfWeek, style.numberOfVisibleDays)
     },
@@ -153,8 +156,10 @@ fun WeekView(
     var pinchBaselineFocalY by remember { mutableFloatStateOf(0f) }
     var measuredGridViewportHeightPx by remember { mutableFloatStateOf(0f) }
     var hasScrolledToCurrentTimeOnLaunch by remember { mutableStateOf(false) }
+    var suppressTapGesturesUntilMillis by remember { mutableStateOf(0L) }
 
     val hourHeightDp = with(density) { hourHeightPx.toDp() }
+    val onHourHeightChangedState by rememberUpdatedState(onHourHeightChanged)
     val hourHeightPxState by rememberUpdatedState(hourHeightPx)
     val gridScrollOffsetPxState by rememberUpdatedState(gridScrollOffsetPx)
     val isPinchZoomActiveState by rememberUpdatedState(isPinchZoomActive)
@@ -453,11 +458,14 @@ fun WeekView(
                 gridScrollOffsetPx = pinchScrollOps.pinchScrollForHourHeight(newHourHeightPx)
             }
         }
-        val onPinchEnd = remember(pinchScrollOps) {
+        val onPinchEnd = remember(pinchScrollOps, density) {
             { newHourHeightPx: Float ->
                 hourHeightPx = newHourHeightPx
                 gridScrollOffsetPx = pinchScrollOps.pinchScrollForHourHeight(newHourHeightPx)
                 isPinchZoomActive = false
+                suppressTapGesturesUntilMillis = System.currentTimeMillis() + PINCH_TAP_SUPPRESSION_MILLIS
+                onHourHeightChangedState?.invoke(with(density) { newHourHeightPx.toDp() })
+                Unit
             }
         }
 
@@ -525,6 +533,7 @@ fun WeekView(
             WeekViewHeader(
                 layout = derivedLayouts.layout,
                 style = style,
+                today = today,
                 dateFormatter = dateFormatter,
                 horizontalTranslationPx = horizontalTranslationPx,
                 textMeasurer = headerTextMeasurer,
@@ -552,6 +561,9 @@ fun WeekView(
                 }
                 val gridHeightDp = with(density) { layoutGridHeightPx.toDp() }
                 val displayGridLayout = derivedLayouts.gridLayout
+                val hitTestGridLayout = with(density) {
+                    resolveDisplayGridLayout(displayGridLayout, style)
+                }
 
                 val dragGhostChip = rememberDragGhostChip(
                     dragState = dragState,
@@ -562,10 +574,14 @@ fun WeekView(
                 )
 
                 SideEffect {
+                    gestureScope.isTapBlocked = {
+                        isPinchZoomActive ||
+                            System.currentTimeMillis() < suppressTapGesturesUntilMillis
+                    }
                     gestureScope.bindEventDragGestures(
                         eventChipsProvider = { chipLayers.eventChips },
                         horizontalTranslationPxProvider = { horizontalTranslationPx },
-                        displayGridLayoutProvider = { displayGridLayout },
+                        displayGridLayoutProvider = { hitTestGridLayout },
                         styleProvider = { style },
                         tapEnabled = gridTapEnabled,
                         longPressEnabled = gridLongPressEnabled,
@@ -614,3 +630,5 @@ fun WeekView(
         }
     }
 }
+
+private const val PINCH_TAP_SUPPRESSION_MILLIS = 300L

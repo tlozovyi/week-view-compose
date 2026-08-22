@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.0-rc2
+
+Fixes for pinch-zoom persistence, paging initial load, grid tap hit-testing after zoom/scroll, and today header styling.
+
+### Added
+
+- **`onHourHeightChanged`** on **`WeekView`** — called when a pinch-to-zoom gesture ends; use to persist hour row height
+- **`todayHeaderTextColor`** on **`WeekViewStyle`** — optional accent for today's date header (`null` → **`headerTextColor`**)
+- **`WeekViewPagingState.ensureLoaded()`** — prefetch events for the visible month window without waiting for horizontal scroll settlement
+
+### Fixed
+
+- **Paging** — initial month fetch runs on first layout when the visible date range is known, not only after scroll snap
+- **Grid taps after zoom/scroll** — hit-testing uses content coordinates (includes vertical scroll offset) and the same Dp-snapped grid layout as drawing; pinch end no longer triggers stray taps
+
 ## 1.0.0-rc1
 
 RTL layout, month-based event paging and fixes for fill patterns.

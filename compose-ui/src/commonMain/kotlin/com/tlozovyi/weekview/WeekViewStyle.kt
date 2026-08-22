@@ -68,6 +68,8 @@ data class WeekViewStyle(
     val headerBackgroundColor: Color = Color(0xFFF5F5F5),
     /** Color of date labels in the header. */
     val headerTextColor: Color = Color.Black,
+    /** Header text color for today's column; `null` uses [headerTextColor]. */
+    val todayHeaderTextColor: Color? = null,
     /** Text size of date labels in the header. */
     val headerTextSizeSp: TextUnit = 12.sp,
     /** Font weight of date labels when [fontFamily] is set; otherwise approximates sans-serif-medium. */

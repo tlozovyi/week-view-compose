@@ -41,6 +41,7 @@ import kotlinx.datetime.number
 internal fun WeekViewHeader(
     layout: WeekViewLayout,
     style: WeekViewStyle,
+    today: kotlinx.datetime.LocalDate,
     dateFormatter: DateFormatter,
     horizontalTranslationPx: Float,
     textMeasurer: TextMeasurer,
@@ -62,11 +63,13 @@ internal fun WeekViewHeader(
         layout.dayWidthPx,
         dateFormatter,
         style.headerTextColor,
+        style.todayHeaderTextColor,
         style.weekendHeaderTextColor,
         style.headerTextSizeSp,
         style.fontFamily,
         style.headerFontWeight,
         textMeasurer,
+        today,
     ) {
         layout.renderDates.map { date ->
             val columnWidth = layout.dayWidthPx - paddingHorizontalPx * 2f
@@ -76,7 +79,7 @@ internal fun WeekViewHeader(
                 date.dayOfMonth,
                 dayOfWeekIndex(date),
             )
-            val labelColor = style.headerDateColor(date)
+            val labelColor = style.headerDateColor(date, today)
             val dateLabelTextStyle = style.headerDateTextStyle(labelColor)
             if (columnWidth <= 0f) {
                 null
