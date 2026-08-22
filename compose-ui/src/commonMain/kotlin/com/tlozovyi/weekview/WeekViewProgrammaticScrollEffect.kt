@@ -182,12 +182,14 @@ private suspend fun scrollHorizontallyToDate(
         scrollOffsetPx = horizontalScrollOffsetPx,
         targetDate = clampedDate,
         dayWidthPx = dayWidthPx,
+        isLtr = layout.isLtr,
     )
     val endScreenX = targetDateScreenX(
         anchorDate = target.anchorDate,
         scrollOffsetPx = target.scrollOffsetPx,
         targetDate = clampedDate,
         dayWidthPx = dayWidthPx,
+        isLtr = layout.isLtr,
     )
 
     if (abs(startScreenX - endScreenX) < 0.5f) {
@@ -210,6 +212,7 @@ private suspend fun scrollHorizontallyToDate(
             referenceColumnScreenX = value,
             referenceDate = clampedDate,
             dayWidthPx = dayWidthPx,
+            isLtr = layout.isLtr,
         )
         onAnchorDateChange(scrolled.anchorDate)
         onHorizontalScrollOffsetChange(scrolled.scrollOffsetPx)

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.0-rc1
+
+RTL layout support matching the View library's `isLtr` behavior.
+
+### Added
+
+- Automatic RTL mirroring from `LocalLayoutDirection` (time column on trailing edge, reversed date columns, inverted horizontal scroll)
+- RTL-aware event chip bounds (`columnGap` inset), chip text alignment, and all-day expand labels
+- RTL now-dot pinning on the grid edge adjacent to the time column
+- RTL horizontal drag auto-scroll and page-snap math
+- Unit tests in `WeekViewRtlTest`
+
+### Changed
+
+- `WeekViewLayout` carries `isLtr`; scroll/snap/programmatic-scroll helpers accept direction-aware date stepping via `dateAtColumnOffset`
+- Version bump to **1.0.0-rc1**
+
 ## 0.10.0-beta
 
 Programmatic scroll API and visual polish matching the View library styling surface.

@@ -62,6 +62,7 @@ internal fun DrawScope.drawWeekViewEventChips(
             paddingVerticalPx = paddingVerticalPx,
             defaultCornerRadiusPx = defaultCornerRadiusPx,
             textStyle = textStyle,
+            isLtr = layout.isLtr,
         )
     }
 
@@ -85,6 +86,7 @@ internal fun DrawScope.drawWeekViewEventChips(
             paddingVerticalPx = paddingVerticalPx,
             defaultCornerRadiusPx = defaultCornerRadiusPx,
             textStyle = textStyle,
+            isLtr = layout.isLtr,
         )
     }
 
@@ -99,6 +101,7 @@ internal fun DrawScope.drawWeekViewEventChips(
             defaultCornerRadiusPx = defaultCornerRadiusPx,
             textStyle = textStyle,
             isDragging = true,
+            isLtr = layout.isLtr,
         )
     }
 }
@@ -112,6 +115,7 @@ private fun DrawScope.drawEventChip(
     paddingVerticalPx: Float,
     defaultCornerRadiusPx: Float,
     textStyle: TextStyle,
+    isLtr: Boolean,
     isDragging: Boolean = false,
 ) {
         val entity = eventChip.event
@@ -180,7 +184,12 @@ private fun DrawScope.drawEventChip(
         drawText(
             textLayoutResult = textLayoutResult,
             topLeft = Offset(
-                x = bounds.left + paddingHorizontalPx,
+                x = eventChipTextX(
+                    bounds = bounds,
+                    paddingHorizontalPx = paddingHorizontalPx,
+                    textWidth = textLayoutResult.size.width.toFloat(),
+                    isLtr = isLtr,
+                ),
                 y = bounds.top + paddingVerticalPx,
             ),
         )

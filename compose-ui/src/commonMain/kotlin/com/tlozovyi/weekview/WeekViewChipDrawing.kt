@@ -24,6 +24,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 
+internal fun eventChipTextX(
+    bounds: ChipBounds,
+    paddingHorizontalPx: Float,
+    textWidth: Float,
+    isLtr: Boolean,
+): Float {
+    return if (isLtr) {
+        bounds.left + paddingHorizontalPx
+    } else {
+        bounds.right - paddingHorizontalPx - textWidth
+    }
+}
+
 internal fun DrawScope.drawEventChipBackground(
     bounds: Rect,
     cornerRadiusPx: Float,
@@ -40,7 +53,11 @@ internal fun DrawScope.drawEventChipBackground(
     )
 
     if (pattern != null) {
-        drawFillPattern(pattern = pattern, bounds = bounds)
+        drawFillPattern(
+            pattern = pattern,
+            bounds = bounds,
+            cornerRadiusPx = cornerRadiusPx,
+        )
     }
 
     if (entity.shouldFlattenMultiDayCorners()) {

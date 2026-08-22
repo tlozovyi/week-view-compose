@@ -68,6 +68,7 @@ internal fun WeekViewHorizontalScrollSnapEffect(
     scrollOffsetPx: Float,
     dayWidthPx: Float,
     style: WeekViewStyle,
+    isLtr: Boolean = true,
     onAnchorDateChange: (LocalDate) -> Unit,
     onScrollOffsetChange: (Float) -> Unit,
     onFirstVisibleDateChange: ((LocalDate) -> Unit)?,
@@ -90,18 +91,21 @@ internal fun WeekViewHorizontalScrollSnapEffect(
             dayWidthPx = dayWidthPx,
             numberOfVisibleDays = style.numberOfVisibleDays,
             firstDayOfWeek = style.firstDayOfWeek,
+            isLtr = isLtr,
         )
         val startReferenceScreenX = referenceColumnScreenX(
             anchorDate = startAnchor,
             scrollOffsetPx = startOffset,
             referenceDate = gesturePageStart,
             dayWidthPx = dayWidthPx,
+            isLtr = isLtr,
         )
         val targetReferenceScreenX = referenceColumnScreenX(
             anchorDate = target.anchorDate,
             scrollOffsetPx = target.scrollOffsetPx,
             referenceDate = gesturePageStart,
             dayWidthPx = dayWidthPx,
+            isLtr = isLtr,
         )
 
         if (abs(startReferenceScreenX - targetReferenceScreenX) < 0.5f) {
@@ -119,6 +123,7 @@ internal fun WeekViewHorizontalScrollSnapEffect(
                             referenceColumnScreenX = value,
                             referenceDate = gesturePageStart,
                             dayWidthPx = dayWidthPx,
+                            isLtr = isLtr,
                         )
                         onAnchorDateChange(scrolled.anchorDate)
                         onScrollOffsetChange(scrolled.scrollOffsetPx)

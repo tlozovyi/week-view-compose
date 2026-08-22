@@ -65,6 +65,7 @@ internal fun WeekViewDragAutoScrollEffect(
     onDragStateChange: (WeekViewDragState?) -> Unit,
     onDragScrollEdgeChange: (DragScrollEdge) -> Unit,
     anchorDate: LocalDate,
+    isLtr: Boolean = true,
     onAnchorDateChange: (LocalDate) -> Unit,
     onAnchorGenerationBump: () -> Unit,
     onFirstVisibleDateChange: ((LocalDate) -> Unit)?,
@@ -110,6 +111,7 @@ internal fun WeekViewDragAutoScrollEffect(
                         edge = edge,
                         currentStartTime = state.currentStartTime,
                         durationInMinutes = state.durationInMinutes,
+                        isLtr = isLtr,
                     )
                     if (result == null) {
                         onDragScrollEdgeChange(DragScrollEdge.None)
@@ -122,8 +124,12 @@ internal fun WeekViewDragAutoScrollEffect(
                             currentEndTime = newEnd,
                         ),
                     )
-                    val dayDelta = if (edge == DragScrollEdge.Left) -1 else 1
-                    val newAnchorDate = anchorDate.plusDays(dayDelta)
+                    val dayDelta = when (edge) {
+                        DragScrollEdge.Left -> if (isLtr) -1 else 1
+                        DragScrollEdge.Right -> if (isLtr) 1 else -1
+                        else -> 0
+                    }
+                    val newAnchorDate = dateAtColumnOffset(anchorDate, dayDelta, isLtr)
                     if (newAnchorDate != anchorDate) {
                         onAnchorGenerationBump()
                     }

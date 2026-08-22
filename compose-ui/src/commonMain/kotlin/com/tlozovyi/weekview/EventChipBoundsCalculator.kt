@@ -31,6 +31,7 @@ internal class EventChipBoundsCalculator(
     private val style: WeekViewStyle,
     private val density: Density,
 ) {
+    private val isLtr = layout.isLtr
     private val hourHeightPx = layout.hourHeightPx
     private val hoursPerDay = style.hoursCount
     private val minutesPerDay = hoursPerDay * 60
@@ -45,6 +46,7 @@ internal class EventChipBoundsCalculator(
         dayStartX: Float,
     ): ChipBounds {
         val isBlockedTime = eventChip.event is ResolvedWeekViewEntity.BlockedTime
+        val leftOffset = if (isLtr || isBlockedTime) 0f else layout.columnGapPx
         val columnDrawableWidth = if (isBlockedTime) layout.dayWidthPx else drawableDayWidth
 
         val minutesFromStart = eventChip.minutesFromStartHour
@@ -60,14 +62,14 @@ internal class EventChipBoundsCalculator(
             bottom -= eventMarginVerticalPx
         }
 
-        var left = dayStartX + eventChip.relativeStart * columnDrawableWidth
+        var left = dayStartX + leftOffset + eventChip.relativeStart * columnDrawableWidth
         var right = left + eventChip.relativeWidth * columnDrawableWidth
 
-        if (left > dayStartX) {
+        if (left > dayStartX + leftOffset) {
             left += overlappingEventGapPx / 2f
         }
 
-        if (right < dayStartX + columnDrawableWidth) {
+        if (right < dayStartX + leftOffset + columnDrawableWidth) {
             right -= overlappingEventGapPx / 2f
         }
 
@@ -116,9 +118,9 @@ internal class EventChipBoundsCalculator(
         }
 
         var left = if (arrangeVertically) {
-            dayStartX
+            dayStartX + if (isLtr) 0f else layout.columnGapPx
         } else {
-            dayStartX + eventChip.relativeStart * drawableDayWidth
+            dayStartX + (if (isLtr) 0f else layout.columnGapPx) + eventChip.relativeStart * drawableDayWidth
         }
 
         var right = if (arrangeVertically) {

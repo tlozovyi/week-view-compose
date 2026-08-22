@@ -38,6 +38,7 @@ internal data class WeekViewLayout(
     val visibleDates: List<LocalDate>,
     val renderDates: List<LocalDate>,
     val scrollBufferDays: Int,
+    val isLtr: Boolean = true,
 ) {
     /** @deprecated Use [viewportGridWidthPx] for the clipped viewport width. */
     val gridWidthPx: Float
@@ -65,6 +66,7 @@ internal fun calculateWeekViewLayout(
     density: Density,
     horizontalScrollingEnabled: Boolean = false,
     hourHeightPxOverride: Float? = null,
+    isLtr: Boolean = true,
 ): WeekViewLayout {
     val timeColumnWidthPx = with(density) { style.timeColumnWidthDp.toPx() }
     val headerHeightPx = with(density) { style.headerHeightDp.toPx() }
@@ -76,13 +78,14 @@ internal fun calculateWeekViewLayout(
     val scrollBufferDays = if (horizontalScrollingEnabled) HORIZONTAL_SCROLL_BUFFER_DAYS else 0
     val visibleDates = buildList {
         for (index in 0 until style.numberOfVisibleDays) {
-            add(firstVisibleDate.plusDays(index))
+            add(dateAtColumnOffset(firstVisibleDate, index, isLtr))
         }
     }
     val renderDates = buildRenderDates(
         firstVisibleDate = firstVisibleDate,
         numberOfVisibleDays = style.numberOfVisibleDays,
         scrollBufferDays = scrollBufferDays,
+        isLtr = isLtr,
     )
     val contentGridWidthPx = renderDates.size * dayWidthPx
 
@@ -100,6 +103,7 @@ internal fun calculateWeekViewLayout(
         visibleDates = visibleDates,
         renderDates = renderDates,
         scrollBufferDays = scrollBufferDays,
+        isLtr = isLtr,
     )
 }
 

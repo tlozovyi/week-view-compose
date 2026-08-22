@@ -47,9 +47,9 @@ private fun WeekViewEvent.toResolvedEntityIfVisible(
     if (visibleDates.isEmpty()) {
         return null
     }
-    val firstVisibleDate = visibleDates.first()
-    val lastVisibleDate = visibleDates.last()
-    if (endTime.date < firstVisibleDate || startTime.date > lastVisibleDate) {
+    val rangeStart = visibleDates.min()
+    val rangeEnd = visibleDates.max()
+    if (endTime.date < rangeStart || startTime.date > rangeEnd) {
         return null
     }
     return toResolvedEntity(style, density)
@@ -63,9 +63,9 @@ private fun WeekViewBlockedTime.toResolvedEntityIfVisible(
     if (visibleDates.isEmpty()) {
         return null
     }
-    val firstVisibleDate = visibleDates.first()
-    val lastVisibleDate = visibleDates.last()
-    if (endTime.date < firstVisibleDate || startTime.date > lastVisibleDate) {
+    val rangeStart = visibleDates.min()
+    val rangeEnd = visibleDates.max()
+    if (endTime.date < rangeStart || startTime.date > rangeEnd) {
         return null
     }
     return toResolvedEntity(style, density)

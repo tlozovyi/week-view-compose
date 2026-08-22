@@ -213,9 +213,13 @@ internal fun DrawScope.drawWeekViewNowDot(
     }
 
     val columnLeft = layout.dayStartX(todayIndex)
+    val columnRight = columnLeft + layout.dayWidthPx
     val dotCenterX = nowDotCenterContentX(
         columnLeft = columnLeft,
+        columnRight = columnRight,
         horizontalTranslationPx = horizontalTranslationPx,
+        viewportGridWidthPx = layout.viewportGridWidthPx,
+        isLtr = layout.isLtr,
     )
     drawCircle(
         color = style.nowLineColor,

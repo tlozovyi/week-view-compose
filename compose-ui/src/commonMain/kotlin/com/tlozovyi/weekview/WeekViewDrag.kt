@@ -188,12 +188,14 @@ internal fun applyHorizontalDragAutoScroll(
     edge: DragScrollEdge,
     currentStartTime: LocalDateTime,
     durationInMinutes: Int,
+    isLtr: Boolean = true,
 ): Pair<LocalDateTime, LocalDateTime>? {
-    val newStart = when (edge) {
-        DragScrollEdge.Left -> currentStartTime.addDays(-1)
-        DragScrollEdge.Right -> currentStartTime.addDays(1)
+    val dayDelta = when (edge) {
+        DragScrollEdge.Left -> if (isLtr) -1 else 1
+        DragScrollEdge.Right -> if (isLtr) 1 else -1
         else -> return null
     }
+    val newStart = currentStartTime.addDays(dayDelta)
     return newStart to newStart.addMinutes(durationInMinutes)
 }
 

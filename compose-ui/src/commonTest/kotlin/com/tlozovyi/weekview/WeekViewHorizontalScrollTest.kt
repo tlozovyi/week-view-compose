@@ -157,25 +157,59 @@ class WeekViewHorizontalScrollTest {
     fun nowDotCenterScreenXPinsToTimeDividerWhenTodayScrollsOffLeft() {
         val dayWidthPx = 100f
         val columnLeft = 200f
+        val columnRight = columnLeft + dayWidthPx
         val horizontalTranslationPx = -250f
+        val viewportWidthPx = 300f
 
-        assertEquals(0f, nowDotCenterScreenX(columnLeft, horizontalTranslationPx), absoluteTolerance = 0.01f)
+        assertEquals(
+            0f,
+            nowDotCenterScreenX(
+                columnLeft = columnLeft,
+                columnRight = columnRight,
+                horizontalTranslationPx = horizontalTranslationPx,
+                viewportGridWidthPx = viewportWidthPx,
+                isLtr = true,
+            ),
+            absoluteTolerance = 0.01f,
+        )
     }
 
     @Test
     fun nowDotCenterScreenXUsesTodayDividerWhenFullyVisible() {
         val columnLeft = 200f
+        val columnRight = 300f
         val horizontalTranslationPx = -200f
 
-        assertEquals(0f, nowDotCenterScreenX(columnLeft, horizontalTranslationPx), absoluteTolerance = 0.01f)
+        assertEquals(
+            0f,
+            nowDotCenterScreenX(
+                columnLeft = columnLeft,
+                columnRight = columnRight,
+                horizontalTranslationPx = horizontalTranslationPx,
+                viewportGridWidthPx = 300f,
+                isLtr = true,
+            ),
+            absoluteTolerance = 0.01f,
+        )
     }
 
     @Test
     fun nowDotCenterScreenXFollowsTodayDividerWhenPastTimeEdge() {
         val columnLeft = 250f
+        val columnRight = 350f
         val horizontalTranslationPx = -200f
 
-        assertEquals(50f, nowDotCenterScreenX(columnLeft, horizontalTranslationPx), absoluteTolerance = 0.01f)
+        assertEquals(
+            50f,
+            nowDotCenterScreenX(
+                columnLeft = columnLeft,
+                columnRight = columnRight,
+                horizontalTranslationPx = horizontalTranslationPx,
+                viewportGridWidthPx = 300f,
+                isLtr = true,
+            ),
+            absoluteTolerance = 0.01f,
+        )
     }
 
     @Test

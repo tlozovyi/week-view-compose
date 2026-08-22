@@ -28,6 +28,7 @@ internal fun applyHorizontalScrollDelta(
     dayWidthPx: Float,
     firstVisibleDate: LocalDate,
     onFirstVisibleDateChange: (LocalDate) -> Unit,
+    isLtr: Boolean = true,
 ): Float {
     if (dayWidthPx <= 0f) {
         return offsetPx
@@ -39,12 +40,12 @@ internal fun applyHorizontalScrollDelta(
 
     while (offset <= -dayWidthPx) {
         offset += dayWidthPx
-        date = date.plusDays(1)
+        date = dateAtColumnOffset(date, 1, isLtr)
         dateChanged = true
     }
     while (offset >= dayWidthPx) {
         offset -= dayWidthPx
-        date = date.plusDays(-1)
+        date = dateAtColumnOffset(date, -1, isLtr)
         dateChanged = true
     }
 
@@ -79,20 +80,36 @@ internal fun isDayColumnVisibleOnScreen(
     return screenRight > 0f && screenLeft < viewportWidthPx
 }
 
-/** Content-space X for the now dot: today's divider, pinned to the time-column edge when scrolled off left. */
+/** Content-space X for the now dot: today's divider, pinned to the grid edge adjacent to the time column. */
 internal fun nowDotCenterContentX(
     columnLeft: Float,
+    columnRight: Float,
     horizontalTranslationPx: Float,
+    viewportGridWidthPx: Float,
+    isLtr: Boolean,
 ): Float {
-    return maxOf(columnLeft, -horizontalTranslationPx)
+    return if (isLtr) {
+        maxOf(columnLeft, -horizontalTranslationPx)
+    } else {
+        minOf(columnRight, viewportGridWidthPx - horizontalTranslationPx)
+    }
 }
 
-/** Screen-space X for [nowDotCenterContentX] (0 = time-column divider). */
+/** Screen-space X for [nowDotCenterContentX] (0 = grid start edge). */
 internal fun nowDotCenterScreenX(
     columnLeft: Float,
+    columnRight: Float,
     horizontalTranslationPx: Float,
+    viewportGridWidthPx: Float,
+    isLtr: Boolean,
 ): Float {
-    return nowDotCenterContentX(columnLeft, horizontalTranslationPx) + horizontalTranslationPx
+    return nowDotCenterContentX(
+        columnLeft = columnLeft,
+        columnRight = columnRight,
+        horizontalTranslationPx = horizontalTranslationPx,
+        viewportGridWidthPx = viewportGridWidthPx,
+        isLtr = isLtr,
+    ) + horizontalTranslationPx
 }
 
 /** Whether the now dot should be drawn for today's column at the current horizontal scroll. */
@@ -140,18 +157,19 @@ internal fun buildRenderDates(
     firstVisibleDate: LocalDate,
     numberOfVisibleDays: Int,
     scrollBufferDays: Int,
+    isLtr: Boolean = true,
 ): List<LocalDate> {
     if (scrollBufferDays <= 0) {
         return buildList {
             for (index in 0 until numberOfVisibleDays) {
-                add(firstVisibleDate.plusDays(index))
+                add(dateAtColumnOffset(firstVisibleDate, index, isLtr))
             }
         }
     }
 
     return buildList {
         for (index in -scrollBufferDays until numberOfVisibleDays + scrollBufferDays) {
-            add(firstVisibleDate.plusDays(index))
+            add(dateAtColumnOffset(firstVisibleDate, index, isLtr))
         }
     }
 }

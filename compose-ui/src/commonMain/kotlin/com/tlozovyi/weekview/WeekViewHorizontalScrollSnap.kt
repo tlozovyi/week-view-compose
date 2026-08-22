@@ -81,8 +81,9 @@ internal fun referenceColumnScreenX(
     scrollOffsetPx: Float,
     referenceDate: LocalDate,
     dayWidthPx: Float,
+    isLtr: Boolean = true,
 ): Float {
-    val dayDelta = referenceDate.toEpochDays() - anchorDate.toEpochDays()
+    val dayDelta = columnOffsetBetween(anchorDate, referenceDate, isLtr)
     return dayDelta * dayWidthPx + scrollOffsetPx
 }
 
@@ -92,6 +93,7 @@ internal fun horizontalScrollLeadingDate(
     anchorDate: LocalDate,
     scrollOffsetPx: Float,
     dayWidthPx: Float,
+    isLtr: Boolean = true,
 ): LocalDate {
     if (dayWidthPx <= 0f) {
         return gesturePageStart
@@ -101,9 +103,10 @@ internal fun horizontalScrollLeadingDate(
         scrollOffsetPx = scrollOffsetPx,
         referenceDate = gesturePageStart,
         dayWidthPx = dayWidthPx,
+        isLtr = isLtr,
     )
     val dayShift = kotlin.math.floor(-referenceScreenX / dayWidthPx + 1e-4f).toInt()
-    return gesturePageStart.plusDays(dayShift)
+    return dateAtColumnOffset(gesturePageStart, dayShift, isLtr)
 }
 
 /** Page start containing the current scroll position. */
@@ -114,6 +117,7 @@ internal fun currentPageStartDate(
     dayWidthPx: Float,
     numberOfVisibleDays: Int,
     firstDayOfWeek: DayOfWeek,
+    isLtr: Boolean = true,
 ): LocalDate {
     val origin = horizontalPageOriginDate(
         firstVisibleDate = pageOriginDate,
@@ -128,6 +132,7 @@ internal fun currentPageStartDate(
         scrollOffsetPx = scrollOffsetPx,
         referenceDate = origin,
         dayWidthPx = dayWidthPx,
+        isLtr = isLtr,
     )
     val daysFromOrigin = kotlin.math.floor(-screenX / dayWidthPx + 1e-4f).toInt()
     val pageIndex = if (daysFromOrigin >= 0) {
@@ -135,7 +140,7 @@ internal fun currentPageStartDate(
     } else {
         (daysFromOrigin - numberOfVisibleDays + 1) / numberOfVisibleDays
     }
-    return origin.plusDays(pageIndex * numberOfVisibleDays)
+    return dateAtColumnOffset(origin, pageIndex * numberOfVisibleDays, isLtr)
 }
 
 /** Lower threshold than half-page rounding so paging feels closer to the View library. */
@@ -148,18 +153,32 @@ internal fun pageTargetForLeadingDate(
     leadingDate: LocalDate,
     numberOfVisibleDays: Int,
     firstDayOfWeek: DayOfWeek,
+    isLtr: Boolean = true,
 ): LocalDate {
-    return if (leadingDate < gesturePageStart) {
+    val scrolledToPast = if (isLtr) {
+        leadingDate < gesturePageStart
+    } else {
+        leadingDate > gesturePageStart
+    }
+    return if (scrolledToPast) {
         if (numberOfVisibleDays >= 7) {
-            leadingDate.previousFirstDayOfWeek(firstDayOfWeek)
+            if (isLtr) {
+                leadingDate.previousFirstDayOfWeek(firstDayOfWeek)
+            } else {
+                leadingDate.nextFirstDayOfWeek(firstDayOfWeek)
+            }
         } else {
-            gesturePageStart.plusDays(-numberOfVisibleDays)
+            dateAtColumnOffset(gesturePageStart, -numberOfVisibleDays, isLtr)
         }
     } else {
         if (numberOfVisibleDays >= 7) {
-            leadingDate.nextFirstDayOfWeek(firstDayOfWeek)
+            if (isLtr) {
+                leadingDate.nextFirstDayOfWeek(firstDayOfWeek)
+            } else {
+                leadingDate.previousFirstDayOfWeek(firstDayOfWeek)
+            }
         } else {
-            gesturePageStart.plusDays(numberOfVisibleDays)
+            dateAtColumnOffset(gesturePageStart, numberOfVisibleDays, isLtr)
         }
     }
 }
@@ -169,13 +188,14 @@ internal fun snapToNearestDayColumn(
     anchorDate: LocalDate,
     scrollOffsetPx: Float,
     dayWidthPx: Float,
+    isLtr: Boolean = true,
 ): HorizontalScrollSnapTarget {
     if (dayWidthPx <= 0f) {
         return HorizontalScrollSnapTarget(anchorDate, 0f)
     }
     val roundedDays = (scrollOffsetPx / dayWidthPx).roundToInt()
     return HorizontalScrollSnapTarget(
-        anchorDate = anchorDate.plusDays(-roundedDays),
+        anchorDate = dateAtColumnOffset(anchorDate, -roundedDays, isLtr),
         scrollOffsetPx = 0f,
     )
 }
@@ -192,6 +212,7 @@ internal fun snapToVisibleDaysPage(
     dayWidthPx: Float,
     numberOfVisibleDays: Int,
     firstDayOfWeek: DayOfWeek,
+    isLtr: Boolean = true,
 ): HorizontalScrollSnapTarget {
     if (dayWidthPx <= 0f || numberOfVisibleDays <= 0) {
         return HorizontalScrollSnapTarget(anchorDate, scrollOffsetPx)
@@ -201,6 +222,7 @@ internal fun snapToVisibleDaysPage(
         anchorDate = anchorDate,
         scrollOffsetPx = scrollOffsetPx,
         dayWidthPx = dayWidthPx,
+        isLtr = isLtr,
     )
     val daysScrolled = abs(leadingDate.toEpochDays() - gesturePageStart.toEpochDays())
     val threshold = horizontalSnapThresholdDays(numberOfVisibleDays)
@@ -210,6 +232,7 @@ internal fun snapToVisibleDaysPage(
             leadingDate = leadingDate,
             numberOfVisibleDays = numberOfVisibleDays,
             firstDayOfWeek = firstDayOfWeek,
+            isLtr = isLtr,
         )
     } else {
         gesturePageStart
@@ -224,6 +247,7 @@ internal fun snapHorizontalScrollTarget(
     dayWidthPx: Float,
     numberOfVisibleDays: Int,
     firstDayOfWeek: DayOfWeek,
+    isLtr: Boolean = true,
 ): HorizontalScrollSnapTarget {
     return snapToVisibleDaysPage(
         gesturePageStart = gesturePageStart,
@@ -232,6 +256,7 @@ internal fun snapHorizontalScrollTarget(
         dayWidthPx = dayWidthPx,
         numberOfVisibleDays = numberOfVisibleDays,
         firstDayOfWeek = firstDayOfWeek,
+        isLtr = isLtr,
     )
 }
 
@@ -239,6 +264,7 @@ internal fun scrollStateFromReferenceScreenX(
     referenceColumnScreenX: Float,
     referenceDate: LocalDate,
     dayWidthPx: Float,
+    isLtr: Boolean = true,
 ): HorizontalScrollSnapTarget {
     if (dayWidthPx <= 0f) {
         return HorizontalScrollSnapTarget(referenceDate, 0f)
@@ -247,6 +273,7 @@ internal fun scrollStateFromReferenceScreenX(
         anchorDate = referenceDate,
         scrollOffsetPx = referenceColumnScreenX,
         dayWidthPx = dayWidthPx,
+        isLtr = isLtr,
     )
 }
 
@@ -254,6 +281,7 @@ internal fun normalizeHorizontalScrollOffset(
     anchorDate: LocalDate,
     scrollOffsetPx: Float,
     dayWidthPx: Float,
+    isLtr: Boolean = true,
 ): HorizontalScrollSnapTarget {
     if (dayWidthPx <= 0f) {
         return HorizontalScrollSnapTarget(anchorDate, 0f)
@@ -263,11 +291,11 @@ internal fun normalizeHorizontalScrollOffset(
     var offset = scrollOffsetPx
     while (offset >= dayWidthPx) {
         offset -= dayWidthPx
-        date = date.plusDays(-1)
+        date = dateAtColumnOffset(date, -1, isLtr)
     }
     while (offset <= -dayWidthPx) {
         offset += dayWidthPx
-        date = date.plusDays(1)
+        date = dateAtColumnOffset(date, 1, isLtr)
     }
     return HorizontalScrollSnapTarget(date, offset)
 }

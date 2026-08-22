@@ -16,6 +16,7 @@
 
 package com.tlozovyi.weekview
 
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -93,5 +94,23 @@ class WeekViewVisualPolishTest {
         )
         val resolved = eventStyle.toEntityStyle(style, density)
         assertTrue(resolved.pattern is ResolvedWeekViewEntity.FillPattern.Dotted)
+    }
+
+    @Test
+    fun buildDiagonalLines_addsExtraLinesForTallChips() {
+        val bounds = Rect(0f, 0f, 100f, 400f)
+        val shortLines = buildDiagonalLines(
+            bounds = Rect(0f, 0f, 100f, 100f),
+            spacing = 10f,
+            isLtr = true,
+            startToEnd = true,
+        )
+        val tallLines = buildDiagonalLines(
+            bounds = bounds,
+            spacing = 10f,
+            isLtr = true,
+            startToEnd = true,
+        )
+        assertTrue(tallLines.size > shortLines.size)
     }
 }

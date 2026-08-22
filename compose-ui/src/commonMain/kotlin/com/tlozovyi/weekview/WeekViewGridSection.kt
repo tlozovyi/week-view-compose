@@ -102,6 +102,7 @@ internal fun WeekViewGridSection(
             hourHeightDp = hourHeightDp,
             gridHeightDp = gridHeightDp,
             timeFormatter = timeFormatter,
+            isLtr = layout.isLtr,
         )
 
         Box(
@@ -154,10 +155,15 @@ internal fun WeekViewGridSection(
                         )
 
                         if (style.showTimeColumnSeparator) {
+                            val separatorX = if (layout.isLtr) {
+                                0f
+                            } else {
+                                size.width - style.daySeparatorWidthDp.toPx()
+                            }
                             drawLine(
                                 color = style.timeColumnSeparatorColor,
-                                start = androidx.compose.ui.geometry.Offset(0f, 0f),
-                                end = androidx.compose.ui.geometry.Offset(0f, size.height),
+                                start = androidx.compose.ui.geometry.Offset(separatorX, 0f),
+                                end = androidx.compose.ui.geometry.Offset(separatorX, size.height),
                                 strokeWidth = style.daySeparatorWidthDp.toPx(),
                             )
                         }

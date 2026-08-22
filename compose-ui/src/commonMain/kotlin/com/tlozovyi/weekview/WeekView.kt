@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import kotlin.time.Clock
@@ -98,6 +99,7 @@ fun WeekView(
     timeFormatter: TimeFormatter = ::defaultTimeFormatter,
 ) {
     val density = LocalDensity.current
+    val isLtr = LocalLayoutDirection.current.isLtr()
     val headerTextMeasurer = rememberTextMeasurer(cacheSize = 16)
     val eventTextMeasurer = rememberTextMeasurer(cacheSize = 64)
     val allDayTextMeasurer = rememberTextMeasurer(cacheSize = 32)
@@ -194,6 +196,7 @@ fun WeekView(
             density,
             horizontalScrollingEnabled,
             hourHeightPx,
+            isLtr,
         ) {
             calculateWeekViewLayout(
                 viewportWidthPx = with(density) { maxWidth.toPx() },
@@ -203,6 +206,7 @@ fun WeekView(
                 density = density,
                 horizontalScrollingEnabled = horizontalScrollingEnabled,
                 hourHeightPxOverride = hourHeightPx,
+                isLtr = isLtr,
             )
         }
 
@@ -219,6 +223,7 @@ fun WeekView(
             scrollOffsetPx = horizontalScrollOffsetPx,
             dayWidthPx = baseLayout.dayWidthPx,
             style = style,
+            isLtr = isLtr,
             onAnchorDateChange = { anchorDate = it },
             onScrollOffsetChange = { horizontalScrollOffsetPx = it },
             onFirstVisibleDateChange = onFirstVisibleDateChange,
@@ -367,6 +372,7 @@ fun WeekView(
                     dayWidthPx = derivedLayouts.layout.dayWidthPx,
                     numberOfVisibleDays = style.numberOfVisibleDays,
                     firstDayOfWeek = style.firstDayOfWeek,
+                    isLtr = isLtr,
                 ),
                 gridScrollOffsetPx = gridScrollOffsetPx,
             )
@@ -448,6 +454,7 @@ fun WeekView(
             onDragStateChange = { dragState = it },
             onDragScrollEdgeChange = { dragScrollEdge = it },
             anchorDate = anchorDate,
+            isLtr = isLtr,
             onAnchorDateChange = { anchorDate = it },
             onAnchorGenerationBump = { anchorGeneration++ },
             onFirstVisibleDateChange = onFirstVisibleDateChange,
@@ -460,6 +467,7 @@ fun WeekView(
                 dayWidthPx = derivedLayouts.layout.dayWidthPx,
                 anchorDateProvider = { anchorDate },
                 horizontalScrollOffsetProvider = { horizontalScrollOffsetPx },
+                isLtr = isLtr,
                 onHorizontalScrollOffsetChange = { horizontalScrollOffsetPx = it },
                 onAnchorDateChange = { anchorDate = it },
                 onAnchorGenerationBump = { anchorGeneration++ },
@@ -479,6 +487,7 @@ fun WeekView(
                             dayWidthPx = derivedLayouts.layout.dayWidthPx,
                             numberOfVisibleDays = style.numberOfVisibleDays,
                             firstDayOfWeek = style.firstDayOfWeek,
+                            isLtr = isLtr,
                         ),
                     )
                 },

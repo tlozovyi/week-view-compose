@@ -66,6 +66,7 @@ internal fun WeekViewGestureScope.bindHorizontalScrollGestures(
     dayWidthPx: Float,
     anchorDateProvider: () -> LocalDate,
     horizontalScrollOffsetProvider: () -> Float,
+    isLtr: Boolean = true,
     onHorizontalScrollOffsetChange: (Float) -> Unit,
     onAnchorDateChange: (LocalDate) -> Unit,
     onAnchorGenerationBump: () -> Unit,
@@ -90,6 +91,7 @@ internal fun WeekViewGestureScope.bindHorizontalScrollGestures(
                     }
                     onAnchorDateChange(newDate)
                 },
+                isLtr = isLtr,
             ),
         )
     }

@@ -39,8 +39,16 @@ internal fun WeekViewTimeColumn(
     hourHeightDp: Dp,
     gridHeightDp: Dp,
     timeFormatter: TimeFormatter,
+    isLtr: Boolean = true,
 ) {
     val hours = style.hours
+    val horizontalAlignment = if (isLtr) Alignment.CenterEnd else Alignment.CenterStart
+    val textPaddingModifier = if (isLtr) {
+        Modifier.padding(end = style.timeColumnPaddingDp)
+    } else {
+        Modifier.padding(start = style.timeColumnPaddingDp)
+    }
+    val textAlign = if (isLtr) TextAlign.End else TextAlign.Start
     Box(
         modifier = Modifier
             .width(style.timeColumnWidthDp)
@@ -58,15 +66,15 @@ internal fun WeekViewTimeColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(rowHeight),
-                    contentAlignment = Alignment.CenterEnd,
+                    contentAlignment = horizontalAlignment,
                 ) {
                     Text(
                         text = timeFormatter(hour),
-                        modifier = Modifier.padding(end = style.timeColumnPaddingDp),
+                        modifier = textPaddingModifier,
                         color = style.timeColumnTextColor,
                         fontSize = style.timeColumnTextSizeSp,
                         fontFamily = style.fontFamily,
-                        textAlign = TextAlign.End,
+                        textAlign = textAlign,
                         maxLines = 1,
                     )
                 }

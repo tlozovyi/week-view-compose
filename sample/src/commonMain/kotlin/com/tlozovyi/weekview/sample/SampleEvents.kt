@@ -423,6 +423,7 @@ internal fun sampleEvents(today: LocalDate): List<WeekViewEvent> {
 }
 
 internal fun sampleBlockedTimes(today: LocalDate): List<WeekViewBlockedTime> {
+    val tomorrow = today.plusDays(1)
     return listOf(
         WeekViewBlockedTime(
             id = 9001,
@@ -441,6 +442,19 @@ internal fun sampleBlockedTimes(today: LocalDate): List<WeekViewBlockedTime> {
             id = 9002,
             startTime = today.atTime(18, 0),
             endTime = today.atTime(19, 0),
+        ),
+        WeekViewBlockedTime(
+            id = 9003,
+            startTime = tomorrow.atTime(12, 0),
+            endTime = tomorrow.atTime(13, 15),
+            title = "Lunch break",
+            style = WeekViewEventStyle(
+                pattern = WeekViewFillPattern.Dotted(
+                    color = Color(0x66757575),
+                    strokeWidthDp = 2.dp,
+                    spacingDp = 4.dp,
+                ),
+            ),
         ),
     )
 }

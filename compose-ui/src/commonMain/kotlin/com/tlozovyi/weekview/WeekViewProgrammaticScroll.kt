@@ -56,6 +56,7 @@ internal fun firstVisibleDateFromScrollState(
     dayWidthPx: Float,
     numberOfVisibleDays: Int,
     firstDayOfWeek: DayOfWeek,
+    isLtr: Boolean = true,
 ): LocalDate {
     if (dayWidthPx <= 0f) {
         return anchorDate
@@ -70,6 +71,7 @@ internal fun firstVisibleDateFromScrollState(
         anchorDate = anchorDate,
         scrollOffsetPx = scrollOffsetPx,
         dayWidthPx = dayWidthPx,
+        isLtr = isLtr,
     )
 }
 
@@ -118,11 +120,13 @@ internal fun targetDateScreenX(
     scrollOffsetPx: Float,
     targetDate: LocalDate,
     dayWidthPx: Float,
+    isLtr: Boolean = true,
 ): Float {
     return referenceColumnScreenX(
         anchorDate = anchorDate,
         scrollOffsetPx = scrollOffsetPx,
         referenceDate = targetDate,
         dayWidthPx = dayWidthPx,
+        isLtr = isLtr,
     )
 }

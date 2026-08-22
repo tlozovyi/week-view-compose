@@ -26,6 +26,7 @@ internal enum class SampleViewMode(
     val description: String,
     val style: WeekViewStyle,
     val showsStaticNavigation: Boolean = false,
+    val usesRtlLayout: Boolean = false,
 ) {
     ThreeDaySnapping(
         title = "3 days · snap",
@@ -102,6 +103,20 @@ internal enum class SampleViewMode(
             horizontalScrollSnapEnabled = true,
             adaptiveEventTextSize = true,
         ),
+    ),
+    ThreeDayRtl(
+        title = "3 days · RTL",
+        description = "3-day snap view in RTL layout direction (time column on the right)",
+        style = WeekViewStyle(
+            numberOfVisibleDays = 3,
+            minHour = 7,
+            maxHour = 22,
+            horizontalScrollSnapEnabled = true,
+            adaptiveEventTextSize = true,
+            showWeekNumber = true,
+            showHeaderBottomLine = true,
+        ),
+        usesRtlLayout = true,
     ),
     FixedEventText(
         title = "Fixed text size",

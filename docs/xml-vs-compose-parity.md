@@ -2,7 +2,7 @@
 
 Comparison between [tlozovyi/Android-Week-View](https://github.com/tlozovyi/Android-Week-View) (View/XML) and this Compose library.
 
-Last updated for **0.10.0-beta**.
+Last updated for **1.0.0-rc1**.
 
 ## Feature matrix
 
@@ -26,7 +26,7 @@ Last updated for **0.10.0-beta**.
 | Custom fonts (`fontFamily`) | ✅ | ✅ |
 | Adapter / paging API | ✅ | ❌ |
 | Emoji in titles | ✅ | ❌ |
-| RTL layout | ✅ | ❌ |
+| RTL layout | ✅ | ✅ |
 | Accessibility | ✅ | ❌ |
 | Fling physics | ✅ | ❌ |
 
@@ -41,6 +41,5 @@ Last updated for **0.10.0-beta**.
 
 - RecyclerView-style adapter and paging
 - Emoji rendering in chip text
-- RTL mirroring (layout direction, scroll, patterns)
 - TalkBack / accessibility actions
 - Fling deceleration matching View scroller

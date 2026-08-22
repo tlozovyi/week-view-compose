@@ -86,6 +86,7 @@ internal fun DrawScope.drawWeekViewAllDayEventChips(
                 paddingVerticalPx = paddingVerticalPx,
                 defaultCornerRadiusPx = defaultCornerRadiusPx,
                 textStyle = textStyle,
+                isLtr = boundsLayout.isLtr,
             )
         }
     }
@@ -114,6 +115,7 @@ private fun DrawScope.drawAllDayEventChip(
     paddingVerticalPx: Float,
     defaultCornerRadiusPx: Float,
     textStyle: TextStyle,
+    isLtr: Boolean,
 ) {
     val entity = eventChip.event
     val width = bounds.width()
@@ -165,7 +167,12 @@ private fun DrawScope.drawAllDayEventChip(
         adaptiveEventTextSize = style.adaptiveEventTextSize,
     )
 
-    val textX = bounds.left + paddingHorizontalPx
+    val textX = eventChipTextX(
+        bounds = bounds,
+        paddingHorizontalPx = paddingHorizontalPx,
+        textWidth = textLayoutResult.size.width.toFloat(),
+        isLtr = isLtr,
+    )
     val textY = bounds.top + (height - textLayoutResult.size.height) / 2f
 
     drawText(
@@ -233,7 +240,11 @@ internal fun DrawScope.drawAllDayExpandInfo(
             maxLines = 1,
         )
 
-        val textX = firstBounds.left + paddingHorizontalPx
+        val textX = if (boundsLayout.isLtr) {
+            firstBounds.left + paddingHorizontalPx
+        } else {
+            firstBounds.right - paddingHorizontalPx - textLayoutResult.size.width
+        }
         val textY = firstBounds.bottom +
             eventMarginVerticalPx +
             paddingVerticalPx
