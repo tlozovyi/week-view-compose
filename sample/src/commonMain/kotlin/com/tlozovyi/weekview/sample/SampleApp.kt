@@ -54,6 +54,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.tlozovyi.weekview.WeekView
+import com.tlozovyi.weekview.rememberWeekViewPagingState
 import com.tlozovyi.weekview.rememberWeekViewScrollState
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -72,6 +73,20 @@ fun SampleApp() {
     val scrollState = rememberWeekViewScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val pagingState = rememberWeekViewPagingState(
+        onLoadMore = { startDate, endDate ->
+            sampleEventsBetween(
+                startDate = startDate,
+                endDate = endDate,
+                referenceToday = today,
+            )
+        },
+        onRangeChanged = { firstVisible, lastVisible ->
+            scope.launch {
+                snackbarHostState.showSnackbar("Range: $firstVisible – $lastVisible")
+            }
+        },
+    )
 
     MaterialTheme {
         Scaffold(
@@ -123,7 +138,8 @@ fun SampleApp() {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f),
-                            events = events,
+                            events = if (selectedMode.usesPaging) emptyList() else events,
+                            pagingState = if (selectedMode.usesPaging) pagingState else null,
                             blockedTimes = blockedTimes,
                             scrollState = scrollState,
                             style = selectedMode.style,

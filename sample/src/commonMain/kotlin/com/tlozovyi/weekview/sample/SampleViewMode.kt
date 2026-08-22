@@ -27,7 +27,20 @@ internal enum class SampleViewMode(
     val style: WeekViewStyle,
     val showsStaticNavigation: Boolean = false,
     val usesRtlLayout: Boolean = false,
+    val usesPaging: Boolean = false,
 ) {
+    ThreeDayPaging(
+        title = "3 days · paging",
+        description = "Month-based paging via WeekViewPagingState (loads events on demand)",
+        style = WeekViewStyle(
+            numberOfVisibleDays = 3,
+            minHour = 7,
+            maxHour = 22,
+            horizontalScrollSnapEnabled = true,
+            adaptiveEventTextSize = true,
+        ),
+        usesPaging = true,
+    ),
     ThreeDaySnapping(
         title = "3 days · snap",
         description = "Default scrollable view with 3-day page snap and adaptive chip text",

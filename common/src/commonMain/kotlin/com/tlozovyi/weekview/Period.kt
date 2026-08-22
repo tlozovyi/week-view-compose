@@ -19,6 +19,7 @@ package com.tlozovyi.weekview
 
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.atTime
 import kotlinx.datetime.number
 
 internal data class FetchRange(
@@ -30,6 +31,10 @@ internal data class FetchRange(
     val periods: List<Period> = listOf(previous, current, next)
 
     internal companion object {
+        fun create(firstVisibleDay: LocalDate): FetchRange {
+            return create(firstVisibleDay.atTime(0, 0))
+        }
+
         fun create(firstVisibleDay: LocalDateTime): FetchRange {
             val current = Period.fromDate(firstVisibleDay)
             return FetchRange(current.previous, current, current.next)

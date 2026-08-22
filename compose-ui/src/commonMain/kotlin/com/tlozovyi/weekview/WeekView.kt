@@ -55,8 +55,10 @@ import kotlinx.datetime.todayIn
  * Renders a scrollable date header, time column, day grid, current-time indicator, timed event
  * chips, and all-day events. Supports horizontal paging, pinch-to-zoom, tap, and drag-and-drop.
  *
- * @param events Timed and all-day events to display. The caller owns the list and should update it
- *   when [onEventDrop] returns new times.
+ * @param events Timed and all-day events to display when [pagingState] is `null`. Ignored when
+ *   [pagingState] is provided.
+ * @param pagingState Optional month-based paging source. When set, events come from
+ *   [WeekViewPagingState.events] and [WeekViewPagingState.submit] is used to return loaded pages.
  * @param blockedTimes Non-interactive time ranges drawn behind events on the day grid.
  * @param modifier Layout modifier for the outer container.
  * @param style Visual configuration ([WeekViewStyle.Default] when omitted).
@@ -81,9 +83,10 @@ import kotlinx.datetime.todayIn
 @PublicApi
 @Composable
 fun WeekView(
-    events: List<WeekViewEvent>,
+    events: List<WeekViewEvent> = emptyList(),
     modifier: Modifier = Modifier,
     blockedTimes: List<WeekViewBlockedTime> = emptyList(),
+    pagingState: WeekViewPagingState? = null,
     style: WeekViewStyle = WeekViewStyle.Default,
     firstVisibleDate: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
     onFirstVisibleDateChange: ((LocalDate) -> Unit)? = null,
@@ -108,6 +111,7 @@ fun WeekView(
     val gestureScope = remember { WeekViewGestureScope() }
 
     val horizontalScrollingEnabled = style.horizontalScrollingEnabled && onFirstVisibleDateChange != null
+    val displayEvents = pagingState?.events ?: events
     val eventClickEnabled = onEventClick != null
     val gridTapEnabled = eventClickEnabled || onEmptyViewClick != null
     val gridLongPressEnabled = onEmptyViewLongClick != null || onEventLongClick != null ||
@@ -245,7 +249,7 @@ fun WeekView(
         }
 
         val chipLayers = rememberWeekViewChipLayers(
-            events = events,
+            events = displayEvents,
             blockedTimes = blockedTimes,
             eventDateRange = eventDateRange,
             anchorGeneration = anchorGeneration,
@@ -378,6 +382,21 @@ fun WeekView(
             )
         }
 
+        WeekViewPagingEffect(
+            pagingState = pagingState,
+            settlementGeneration = anchorGeneration,
+            firstVisibleDate = firstVisibleDateFromScrollState(
+                anchorDate = anchorDate,
+                scrollOffsetPx = horizontalScrollOffsetPx,
+                dayWidthPx = derivedLayouts.layout.dayWidthPx,
+                numberOfVisibleDays = style.numberOfVisibleDays,
+                firstDayOfWeek = style.firstDayOfWeek,
+                isLtr = isLtr,
+            ),
+            numberOfVisibleDays = style.numberOfVisibleDays,
+            isLtr = isLtr,
+        )
+
         SideEffect {
             if (!isPinchZoomActive) {
                 gridScrollOffsetPx = pinchScrollOps.clampGridScrollOffsetPx(gridScrollOffsetPx)
@@ -475,6 +494,7 @@ fun WeekView(
                     if (style.horizontalScrollSnapEnabled) {
                         horizontalScrollSnapState.requestSnap()
                     } else {
+                        anchorGeneration++
                         onFirstVisibleDateChange?.invoke(anchorDate)
                     }
                 },

@@ -2,20 +2,38 @@
 
 ## 1.0.0-rc1
 
-RTL layout support matching the View library's `isLtr` behavior.
+RTL layout, month-based event paging and fixes for fill patterns.
 
 ### Added
 
-- Automatic RTL mirroring from `LocalLayoutDirection` (time column on trailing edge, reversed date columns, inverted horizontal scroll)
+#### Paging (View `PagingAdapter` equivalent)
+
+- **`WeekViewPagingState`** and **`rememberWeekViewPagingState()`** — month-based cache; prefetches current month plus previous and next
+- **`WeekViewPagingSubmit`** — `submit` callback passed into **`onLoadMore(startDate, endDate, submit)`** so async loaders do not need a state holder
+- Suspend overload of **`rememberWeekViewPagingState`** — `onLoadMore` returns `List<WeekViewEvent>` and results are submitted automatically
+- Optional **`pagingState`** parameter on **`WeekView`** (uses `pagingState.events` instead of `events`)
+- **`WeekViewPagingController<T>`** in the `common` module for non-Compose integrations
+- Optional **`onRangeChanged`** on `rememberWeekViewPagingState` (matches View `Adapter.onRangeChanged`)
+- **`pagingState.refresh()`** clears the month cache and reloads the current window
+- Sample **3 days · paging** mode
+- Unit tests: `WeekViewPagingControllerTest`, `WeekViewPagingStateTest`
+
+#### RTL
+
+- Automatic RTL mirroring from **`LocalLayoutDirection`** (time column on trailing edge, reversed date columns)
 - RTL-aware event chip bounds (`columnGap` inset), chip text alignment, and all-day expand labels
 - RTL now-dot pinning on the grid edge adjacent to the time column
 - RTL horizontal drag auto-scroll and page-snap math
-- Unit tests in `WeekViewRtlTest`
+- Sample **3 days · RTL** mode
+- Unit tests in **`WeekViewRtlTest`**
+
+### Fixed
+
+- **Fill patterns** — diagonal hatch clipped to rounded chip bounds; extra lines for tall chips; dotted grid uses `ceil` so the bottom row is not clipped
 
 ### Changed
 
-- `WeekViewLayout` carries `isLtr`; scroll/snap/programmatic-scroll helpers accept direction-aware date stepping via `dateAtColumnOffset`
-- Version bump to **1.0.0-rc1**
+- **`events`** parameter on **`WeekView`** defaults to `emptyList()` when using **`pagingState`**
 
 ## 0.10.0-beta
 

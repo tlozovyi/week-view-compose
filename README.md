@@ -4,7 +4,7 @@
 
 Compose Multiplatform calendar week view for **Android** and **iOS**.
 
-**Status:** `1.0.0-rc1` — calendar grid, event chips, blocked time, gestures, programmatic scroll, visual polish, and RTL layout via `LocalLayoutDirection`.
+**Status:** `1.0.0-rc1` — calendar grid, event chips, blocked time, gestures, programmatic scroll, month-based paging, visual polish, and RTL layout via `LocalLayoutDirection`.
 
 ## Features
 
@@ -14,6 +14,7 @@ Compose Multiplatform calendar week view for **Android** and **iOS**.
 - Tap handling for timed and all-day events; empty-slot tap and long-press
 - Blocked time ranges (non-interactive; taps fall through to empty-slot callbacks)
 - Programmatic scroll via `WeekViewScrollState` (`scrollToDate`, `scrollToTime`, `scrollToDateTime`)
+- Month-based paging via `WeekViewPagingState` (`onLoadMore` + `submit` callback, optional suspend loader overload, `refresh`)
 - Continuous horizontal scrolling with optional page snap on finger release
 - Week-aligned 7-day mode via `firstDayOfWeek`
 - Free-scroll mode when `horizontalScrollSnapEnabled = false`
@@ -27,7 +28,7 @@ Compose Multiplatform calendar week view for **Android** and **iOS**.
 
 ### Not yet implemented
 
-- Adapter / paging API
+- Custom `@Composable` content for events, date headers, time labels, all-day chips, and other UI elements (replacing the built-in Canvas drawing)
 - Emoji support in event titles
 - Accessibility
 
@@ -129,6 +130,47 @@ LaunchedEffect(selectedEvent) {
     firstVisibleDate = scrollState.firstVisibleDate
 }
 ```
+
+### Month-based paging
+
+For large calendars, load events month-by-month instead of passing the full list. The state prefetches the current month plus its neighbors (same as View `PagingAdapter`). Loads are triggered when horizontal scrolling **settles** (snap complete or finger release).
+
+**Async loader** — `submit` is passed into `onLoadMore` so you do not need to capture `WeekViewPagingState` before `remember` returns:
+
+```kotlin
+val scope = rememberCoroutineScope()
+
+val pagingState = rememberWeekViewPagingState(
+    onLoadMore = { startDate, endDate, submit ->
+        scope.launch {
+            submit(repository.loadEvents(startDate, endDate))
+        }
+    },
+    onRangeChanged = { firstVisible, lastVisible ->
+        // optional — called when the leading visible date changes after scroll settles
+    },
+)
+```
+
+**Suspend loader** — return events directly; submission is handled for you:
+
+```kotlin
+val pagingState = rememberWeekViewPagingState(
+    onLoadMore = { startDate, endDate ->
+        repository.loadEvents(startDate, endDate)
+    },
+)
+
+WeekView(
+    pagingState = pagingState,
+    firstVisibleDate = firstVisibleDate,
+    onFirstVisibleDateChange = { firstVisibleDate = it },
+)
+```
+
+- **`pagingState.refresh()`** — clear the month cache and reload the current window
+- **`pagingState.submit(events)`** — still available for manual updates (e.g. after drag-and-drop)
+- View equivalent: `PagingAdapter.onLoadMore` + `submitList()`; `Adapter.onRangeChanged` → `onRangeChanged` parameter
 
 ### Blocked time
 
