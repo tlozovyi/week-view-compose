@@ -66,7 +66,7 @@ internal fun Modifier.weekViewPinchZoom(
     gestureScope: WeekViewGestureScope,
     zoomConfig: () -> WeekViewPinchZoomConfig,
     hourHeightPx: () -> Float,
-    onPinchStart: (focalYInContentPx: Float) -> Unit,
+    onPinchStart: (focalYInViewportPx: Float) -> Unit,
     onPinchStep: (newHourHeightPx: Float) -> Unit,
     onPinchEnd: (newHourHeightPx: Float) -> Unit,
 ): Modifier {
@@ -93,8 +93,8 @@ internal fun Modifier.weekViewPinchZoom(
             }
 
             val baselineHourHeightPx = hourHeightPx()
-            val baselineFocalY = event.pinchCentroid().y
-            onPinchStart(baselineFocalY)
+            val baselineFocalYInViewportPx = event.pinchCentroid().y
+            onPinchStart(baselineFocalYInViewportPx)
 
             var latestHourHeightPx = baselineHourHeightPx
             var latestSpan = initialSpan
@@ -114,7 +114,7 @@ internal fun Modifier.weekViewPinchZoom(
                         baselineHourHeightPx = baselineHourHeightPx,
                         cumulativeScale = cumulativeScale,
                         baselineScrollOffsetPx = 0f,
-                        focalYInViewportPx = baselineFocalY,
+                        focalYInViewportPx = baselineFocalYInViewportPx,
                         config = zoomConfig(),
                     )
                     if (result != null) {
@@ -127,13 +127,6 @@ internal fun Modifier.weekViewPinchZoom(
                 event = awaitPointerEvent(PointerEventPass.Initial)
             } while (event.pressedPointerCount() >= 2)
 
-            val finalHourHeightPx = clampPinchHourHeightPx(
-                baselineHourHeightPx = baselineHourHeightPx,
-                cumulativeScale = latestSpan / initialSpan,
-                config = zoomConfig(),
-            )
-            onPinchStep(finalHourHeightPx)
-
             do {
                 event.changes.forEach { change ->
                     if (change.pressed) {
@@ -143,7 +136,7 @@ internal fun Modifier.weekViewPinchZoom(
                 event = awaitPointerEvent(PointerEventPass.Initial)
             } while (event.changes.any { it.pressed })
 
-            onPinchEnd(finalHourHeightPx)
+            onPinchEnd(latestHourHeightPx)
         }
     }
 }

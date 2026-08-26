@@ -51,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.tlozovyi.weekview.WeekView
@@ -66,6 +67,7 @@ import kotlin.time.Clock
 @Composable
 fun SampleApp() {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    var savedHourHeightDp by remember { mutableStateOf<Dp?>(null) }
     var selectedMode by remember { mutableStateOf(SampleViewMode.ThreeDaySnapping) }
     var firstVisibleDate by remember(selectedMode) { mutableStateOf(today) }
     var events by remember { mutableStateOf(sampleEvents(today)) }
@@ -142,7 +144,9 @@ fun SampleApp() {
                             pagingState = if (selectedMode.usesPaging) pagingState else null,
                             blockedTimes = blockedTimes,
                             scrollState = scrollState,
-                            style = selectedMode.style,
+                            style = savedHourHeightDp?.let { selectedMode.style.copy(hourHeightDp = it) }
+                                ?: selectedMode.style,
+                            onHourHeightChanged = { savedHourHeightDp = it },
                             firstVisibleDate = firstVisibleDate,
                             onFirstVisibleDateChange = { updatedDate ->
                                 if (selectedMode.style.horizontalScrollingEnabled) {

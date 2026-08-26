@@ -77,8 +77,9 @@ import kotlinx.datetime.todayIn
  *   its snapped start/end times. Requires [WeekViewStyle.dragAndDropEnabled].
  * @param scrollState Optional controller for programmatic scroll commands ([scrollToDate],
  *   [scrollToTime], [scrollToDateTime]). Create with [rememberWeekViewScrollState].
- * @param onHourHeightChanged Called when the user finishes a pinch-to-zoom gesture with the new
- *   hour row height. Use this to persist zoom level across sessions.
+ * @param onHourHeightChanged Called when the user finishes a pinch-to-zoom gesture with the
+ *   [Dp] value to store in [WeekViewStyle.hourHeightDp]. The callback uses the same px→dp
+ *   conversion as the style setter so restored zoom levels do not jump on recomposition.
  * @param dateFormatter Formats date labels in the header row.
  * @param timeFormatter Formats hour labels in the time column.
  */
@@ -145,9 +146,13 @@ fun WeekView(
     var allDayEventsExpanded by remember { mutableStateOf(false) }
     var anchorGeneration by remember { mutableIntStateOf(0) }
     var gridScrollOffsetPx by remember { mutableFloatStateOf(0f) }
-    var hourHeightPx by remember(style.hourHeightDp, density) {
-        mutableFloatStateOf(with(density) { style.hourHeightDp.toPx() })
+    var hourHeightPx by remember {
+        mutableFloatStateOf(
+            with(density) { canonicalHourHeightPx(style.hourHeightDp.toPx(), style.hoursCount) },
+        )
     }
+    var lastReportedHourHeightDp by remember { mutableStateOf<Dp?>(null) }
+    var lastReportedHourHeightPx by remember { mutableFloatStateOf(Float.NaN) }
     var isPinchZoomActive by remember { mutableStateOf(false) }
     var dragState by remember { mutableStateOf<WeekViewDragState?>(null) }
     var dragScrollEdge by remember { mutableStateOf(DragScrollEdge.None) }
@@ -166,7 +171,34 @@ fun WeekView(
     val dragStateState by rememberUpdatedState(dragState)
 
     LaunchedEffect(style.hourHeightDp, density) {
-        hourHeightPx = with(density) { style.hourHeightDp.toPx() }
+        val stylePx = with(density) { style.hourHeightDp.toPx() }
+        val styleEchoesLastReported = style.hourHeightDp == lastReportedHourHeightDp
+        val matchesLastReportedPx = !lastReportedHourHeightPx.isNaN() &&
+            kotlin.math.abs(hourHeightPx - lastReportedHourHeightPx) < HOUR_HEIGHT_SYNC_TOLERANCE_PX
+        if (!shouldApplyStyleHourHeight(
+                stylePx = stylePx,
+                currentPx = hourHeightPx,
+                isPinchZoomActive = isPinchZoomActive,
+                styleEchoesLastReported = styleEchoesLastReported,
+                matchesLastReportedPx = matchesLastReportedPx,
+            )
+        ) {
+            if (styleEchoesLastReported || matchesLastReportedPx) {
+                if (kotlin.math.abs(stylePx - hourHeightPx) < HOUR_HEIGHT_SYNC_TOLERANCE_PX) {
+                    lastReportedHourHeightDp = null
+                    lastReportedHourHeightPx = Float.NaN
+                }
+            }
+            return@LaunchedEffect
+        }
+        lastReportedHourHeightDp = null
+        lastReportedHourHeightPx = Float.NaN
+        gridScrollOffsetPx = scaledScrollOffsetForHourHeightChange(
+            scrollOffsetPx = gridScrollOffsetPx,
+            currentHourHeightPx = hourHeightPx,
+            newHourHeightPx = stylePx,
+        )
+        hourHeightPx = with(density) { canonicalHourHeightPx(stylePx, style.hoursCount) }
     }
 
     LaunchedEffect(firstVisibleDate, style.numberOfVisibleDays, style.firstDayOfWeek) {
@@ -438,33 +470,36 @@ fun WeekView(
             consumed
         }
 
-        val onPinchStart = remember(density, pinchScrollOps, gridViewportHeightPx) {
-            { focalYInContentPx: Float ->
-                val currentScrollOffsetPx = pinchScrollOps.clampGridScrollOffsetPx(gridScrollOffsetPx)
+        val onPinchStart = remember(pinchScrollOps, gridViewportHeightPx) {
+            { focalYInViewportPx: Float ->
                 isPinchZoomActive = true
-                pinchBaselineScrollOffsetPx = currentScrollOffsetPx
-                gridScrollOffsetPx = currentScrollOffsetPx
+                pinchBaselineScrollOffsetPx = gridScrollOffsetPx
                 pinchBaselineLayoutGridHeightPx = pinchScrollOps.layoutGridHeightForHourHeight(hourHeightPx)
-                pinchBaselineFocalY = focalYInViewportPx(
-                    focalYInContentPx = focalYInContentPx,
-                    scrollOffsetPx = currentScrollOffsetPx,
-                    viewportGridHeightPx = gridViewportHeightPx,
-                )
+                pinchBaselineFocalY = focalYInViewportPx.coerceIn(0f, gridViewportHeightPx)
             }
         }
-        val onPinchStep = remember(pinchScrollOps) {
+        val onPinchStep = remember(pinchScrollOps, density, style.hoursCount) {
             { newHourHeightPx: Float ->
-                hourHeightPx = newHourHeightPx
-                gridScrollOffsetPx = pinchScrollOps.pinchScrollForHourHeight(newHourHeightPx)
+                val canonicalHourHeightPx = with(density) {
+                    canonicalHourHeightPx(newHourHeightPx, style.hoursCount)
+                }
+                hourHeightPx = canonicalHourHeightPx
+                gridScrollOffsetPx = pinchScrollOps.pinchScrollForHourHeight(canonicalHourHeightPx)
             }
         }
-        val onPinchEnd = remember(pinchScrollOps, density) {
+        val onPinchEnd = remember(pinchScrollOps, density, style.hoursCount) {
             { newHourHeightPx: Float ->
-                hourHeightPx = newHourHeightPx
-                gridScrollOffsetPx = pinchScrollOps.pinchScrollForHourHeight(newHourHeightPx)
+                val canonicalHourHeightPx = with(density) {
+                    canonicalHourHeightPx(newHourHeightPx, style.hoursCount)
+                }
+                hourHeightPx = canonicalHourHeightPx
+                gridScrollOffsetPx = pinchScrollOps.pinchScrollForHourHeight(canonicalHourHeightPx)
                 isPinchZoomActive = false
                 suppressTapGesturesUntilMillis = System.currentTimeMillis() + PINCH_TAP_SUPPRESSION_MILLIS
-                onHourHeightChangedState?.invoke(with(density) { newHourHeightPx.toDp() })
+                val canonicalHourHeightDp = with(density) { canonicalHourHeightPx.toDp() }
+                lastReportedHourHeightDp = canonicalHourHeightDp
+                lastReportedHourHeightPx = canonicalHourHeightPx
+                onHourHeightChangedState?.invoke(canonicalHourHeightDp)
                 Unit
             }
         }

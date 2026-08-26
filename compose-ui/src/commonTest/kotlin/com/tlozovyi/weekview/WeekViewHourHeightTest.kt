@@ -18,7 +18,9 @@ package com.tlozovyi.weekview
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class WeekViewHourHeightTest {
 
@@ -102,6 +104,18 @@ class WeekViewHourHeightTest {
         val contentBefore = 200f + 150f
         val contentAfter = scrollAfter + 150f
         assertEquals(contentBefore * 2f, contentAfter)
+    }
+
+    @Test
+    fun scrollOffsetForLayoutGridZoomAtFocalPoint_usesViewportFocalAfterVerticalScroll() {
+        val scrollAfter = scrollOffsetForLayoutGridZoomAtFocalPoint(
+            baselineScrollOffsetPx = 400f,
+            baselineLayoutGridHeightPx = 1_000f,
+            newLayoutGridHeightPx = 1_100f,
+            focalYInViewportPx = 180f,
+        )
+
+        assertEquals(458f, scrollAfter)
     }
 
     @Test
@@ -259,5 +273,50 @@ class WeekViewHourHeightTest {
         )
 
         assertEquals(100f to 250f, result)
+    }
+
+    @Test
+    fun shouldApplyStyleHourHeight_skipsEchoAndPinchStates() {
+        assertFalse(
+            shouldApplyStyleHourHeight(
+                stylePx = 100f,
+                currentPx = 100f,
+                isPinchZoomActive = false,
+                styleEchoesLastReported = true,
+                matchesLastReportedPx = false,
+            ),
+        )
+        assertFalse(
+            shouldApplyStyleHourHeight(
+                stylePx = 120f,
+                currentPx = 100f,
+                isPinchZoomActive = true,
+                styleEchoesLastReported = false,
+                matchesLastReportedPx = false,
+            ),
+        )
+        assertFalse(
+            shouldApplyStyleHourHeight(
+                stylePx = 80f,
+                currentPx = 100f,
+                isPinchZoomActive = false,
+                styleEchoesLastReported = false,
+                matchesLastReportedPx = true,
+            ),
+        )
+        assertTrue(
+            shouldApplyStyleHourHeight(
+                stylePx = 120f,
+                currentPx = 100f,
+                isPinchZoomActive = false,
+                styleEchoesLastReported = false,
+                matchesLastReportedPx = false,
+            ),
+        )
+    }
+
+    @Test
+    fun scaledScrollOffsetForHourHeightChange_scalesProportionally() {
+        assertEquals(200f, scaledScrollOffsetForHourHeightChange(100f, 50f, 100f))
     }
 }

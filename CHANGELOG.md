@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.0-rc3
+
+Fixes pinch-zoom persistence jumps and paging initial-load race.
+
+### Fixed
+
+- **Pinch-zoom persistence** — `onHourHeightChanged` now reports the same canonical `Dp` as [WeekViewStyle.hourHeightDp]; echoing that value back into style no longer re-syncs and jumps the grid. External style changes scale vertical scroll proportionally.
+- **Pinch-zoom release jump** — style sync no longer re-runs when pinch ends (before the parent applies the callback); hour height is canonicalized to match layout snapping; pinch end reuses the last gesture frame instead of re-clamping.
+- **Pinch-zoom restart jump** — pinch start now stores the pointer centroid in viewport space (not content space), so a second pinch after vertical scroll no longer jumps; scroll is not re-clamped at pinch begin.
+- **Paging initial load** — removed pre-fetch `reserve()` that marked empty months as cached before `onLoadMore` ran; callbacks are wired during composition (not `SideEffect`); stale in-flight periods are cleared and retried when callbacks update.
+
 ## 1.0.0-rc2
 
 Fixes for pinch-zoom persistence, paging initial load, grid tap hit-testing after zoom/scroll, and today header styling.

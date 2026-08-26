@@ -41,24 +41,31 @@ internal class PaginatedEventsCache<T>(
         }
     }
 
-    fun update(events: List<T>) {
+    fun update(events: List<T>, loadedPeriods: Collection<Period> = emptyList()) {
         val groupedEvents = events.groupBy { Period.fromDate(startTime(it)) }
-        for ((period, periodEvents) in groupedEvents) {
-            eventsByPeriod[period] = periodEvents.toMutableList()
+        if (loadedPeriods.isEmpty()) {
+            for ((period, periodEvents) in groupedEvents) {
+                eventsByPeriod[period] = periodEvents.toMutableList()
+            }
+            return
+        }
+        for (period in loadedPeriods) {
+            eventsByPeriod[period] = groupedEvents[period].orEmpty().toMutableList()
         }
     }
 
-    fun determinePeriodsToFetch(range: FetchRange): List<Period> {
-        return range.periods.filter { period -> period !in this }
+    fun determinePeriodsToFetch(
+        range: FetchRange,
+        excludedPeriods: Set<Period> = emptySet(),
+    ): List<Period> {
+        return range.periods.filter { period ->
+            period !in this && period !in excludedPeriods
+        }
     }
 
     operator fun contains(period: Period): Boolean = eventsByPeriod.containsKey(period)
 
     operator fun contains(range: FetchRange): Boolean = range.periods.all { it in this }
-
-    fun reserve(period: Period) {
-        eventsByPeriod[period] = mutableListOf()
-    }
 
     fun clear() {
         eventsByPeriod.clear()

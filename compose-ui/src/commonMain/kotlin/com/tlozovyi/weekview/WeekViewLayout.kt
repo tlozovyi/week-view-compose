@@ -58,6 +58,14 @@ internal data class WeekViewLayout(
 /** Matches Compose layout height after the px → dp → px round-trip used by [Modifier.height]. */
 internal fun Density.layoutHeightPx(heightPx: Float): Float = heightPx.toDp().toPx()
 
+/** Hour row height that survives [layoutHeightPx] when applied to the full day grid. */
+internal fun Density.canonicalHourHeightPx(hourHeightPx: Float, hoursCount: Int): Float {
+    if (hoursCount <= 0) {
+        return hourHeightPx
+    }
+    return layoutHeightPx(hoursCount * hourHeightPx) / hoursCount
+}
+
 /**
  * Grid layout aligned with how [Modifier.height] snaps heights, so drawing and hit-testing share
  * the same hour-row scale after pinch-to-zoom.

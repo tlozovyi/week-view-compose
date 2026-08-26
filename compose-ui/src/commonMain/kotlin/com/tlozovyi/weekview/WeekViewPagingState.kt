@@ -17,7 +17,6 @@
 package com.tlozovyi.weekview
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -130,14 +129,12 @@ fun rememberWeekViewPagingState(
     val state = remember { WeekViewPagingState() }
     val latestOnLoadMore by rememberUpdatedState(onLoadMore)
     val latestOnRangeChanged by rememberUpdatedState(onRangeChanged)
-    SideEffect {
-        state.updateCallbacks(
-            onLoadMore = { startDate, endDate, submit ->
-                latestOnLoadMore(startDate, endDate, submit)
-            },
-            onRangeChanged = latestOnRangeChanged,
-        )
-    }
+    state.updateCallbacks(
+        onLoadMore = { startDate, endDate, submit ->
+            latestOnLoadMore(startDate, endDate, submit)
+        },
+        onRangeChanged = latestOnRangeChanged,
+    )
     return state
 }
 

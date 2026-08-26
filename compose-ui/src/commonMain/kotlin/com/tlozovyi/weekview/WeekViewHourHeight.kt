@@ -16,7 +16,34 @@
 
 package com.tlozovyi.weekview
 
+import kotlin.math.abs
 import kotlin.math.max
+
+internal const val HOUR_HEIGHT_SYNC_TOLERANCE_PX = 1f
+
+internal fun shouldApplyStyleHourHeight(
+    stylePx: Float,
+    currentPx: Float,
+    isPinchZoomActive: Boolean,
+    styleEchoesLastReported: Boolean,
+    matchesLastReportedPx: Boolean,
+): Boolean {
+    if (isPinchZoomActive || styleEchoesLastReported || matchesLastReportedPx) {
+        return false
+    }
+    return abs(currentPx - stylePx) >= HOUR_HEIGHT_SYNC_TOLERANCE_PX
+}
+
+internal fun scaledScrollOffsetForHourHeightChange(
+    scrollOffsetPx: Float,
+    currentHourHeightPx: Float,
+    newHourHeightPx: Float,
+): Float {
+    if (currentHourHeightPx <= 0f) {
+        return scrollOffsetPx
+    }
+    return scrollOffsetPx * (newHourHeightPx / currentHourHeightPx)
+}
 
 /**
  * Computes the minimum hour height in pixels, matching the original View library:

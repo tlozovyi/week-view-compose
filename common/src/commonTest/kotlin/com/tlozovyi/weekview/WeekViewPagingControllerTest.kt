@@ -70,6 +70,46 @@ class WeekViewPagingControllerTest {
     }
 
     @Test
+    fun controller_retriesAfterCallbacksAreWired() {
+        val requestedRanges = mutableListOf<Pair<LocalDate, LocalDate>>()
+        val controller = WeekViewPagingController<TestEvent>(
+            startTime = { it.startTime },
+            endTime = { it.endTime },
+            onLoadMore = { _, _, _ -> },
+        )
+
+        controller.onScrollSettled(LocalDate(2026, 8, 21))
+        assertEquals(0, controller.items.size)
+
+        controller.updateCallbacks { start, end, submit ->
+            requestedRanges += start to end
+            submit(listOf(TestEvent(LocalDate(2026, 8, 10).atTime(10, 0))))
+        }
+
+        assertEquals(1, requestedRanges.size)
+        assertEquals(1, controller.items.size)
+    }
+
+    @Test
+    fun controller_marksEmptyMonthsAsLoadedOnSubmit() {
+        var loadCount = 0
+        val controller = WeekViewPagingController<TestEvent>(
+            startTime = { it.startTime },
+            endTime = { it.endTime },
+            onLoadMore = { _, _, submit ->
+                loadCount++
+                submit(emptyList())
+            },
+        )
+
+        controller.onScrollSettled(LocalDate(2026, 8, 21))
+        assertEquals(1, loadCount)
+
+        controller.onScrollSettled(LocalDate(2026, 8, 21))
+        assertEquals(1, loadCount)
+    }
+
+    @Test
     fun groupConsecutivePeriods_mergesAdjacentMonths() {
         val august = Period.fromDate(LocalDate(2026, 8, 1).atTime(0, 0))
         val september = Period.fromDate(LocalDate(2026, 9, 1).atTime(0, 0))

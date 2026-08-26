@@ -73,7 +73,7 @@ internal fun WeekViewGridSection(
         .scrollable(
             state = gridScrollableState,
             orientation = Orientation.Vertical,
-            enabled = !isPinchZoomActive,
+            enabled = true,
         )
 
     Row(

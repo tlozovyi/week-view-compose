@@ -38,6 +38,8 @@ class WeekViewPagingController<T>(
     private val cache = PaginatedEventsCache(startTime = startTime, endTime = endTime)
     private var fetchAnchorDate: LocalDate? = null
     private var displayedItems: List<T> = emptyList()
+    private val pendingPeriods = mutableSetOf<Period>()
+    private var inFlightPeriods: List<Period> = emptyList()
 
     val items: List<T>
         get() = displayedItems
@@ -46,20 +48,34 @@ class WeekViewPagingController<T>(
         onLoadMore: (startDate: LocalDate, endDate: LocalDate, submit: (List<T>) -> Unit) -> Unit,
     ) {
         this.onLoadMore = onLoadMore
+        retryPendingFetches()
     }
 
     fun submit(items: List<T>) {
-        cache.update(items)
+        if (inFlightPeriods.isNotEmpty()) {
+            cache.update(items, loadedPeriods = inFlightPeriods)
+            pendingPeriods.removeAll(inFlightPeriods.toSet())
+            inFlightPeriods = emptyList()
+        } else {
+            cache.update(items)
+        }
         refreshDisplayedItems()
     }
 
     fun refresh() {
         cache.clear()
+        pendingPeriods.clear()
+        inFlightPeriods = emptyList()
         fetchAnchorDate?.let(::dispatchLoadRequest)
     }
 
     fun onScrollSettled(firstVisibleDate: LocalDate) {
         dispatchLoadRequest(firstVisibleDate)
+    }
+
+    private fun retryPendingFetches() {
+        pendingPeriods.clear()
+        fetchAnchorDate?.let(::dispatchLoadRequest)
     }
 
     private fun dispatchLoadRequest(firstVisibleDate: LocalDate) {
@@ -70,15 +86,17 @@ class WeekViewPagingController<T>(
             return
         }
 
-        val periodsToFetch = cache.determinePeriodsToFetch(fetchRange)
+        val periodsToFetch = cache.determinePeriodsToFetch(
+            range = fetchRange,
+            excludedPeriods = pendingPeriods,
+        )
         if (periodsToFetch.isEmpty()) {
             refreshDisplayedItems()
             return
         }
 
-        for (period in periodsToFetch) {
-            cache.reserve(period)
-        }
+        pendingPeriods.addAll(periodsToFetch)
+        inFlightPeriods = periodsToFetch
         refreshDisplayedItems()
 
         for (group in periodsToFetch.groupConsecutivePeriods()) {
