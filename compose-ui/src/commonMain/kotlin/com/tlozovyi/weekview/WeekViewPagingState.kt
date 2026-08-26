@@ -17,13 +17,17 @@
 package com.tlozovyi.weekview
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlin.jvm.JvmName
@@ -44,6 +48,7 @@ fun interface WeekViewPagingSubmit {
 @Stable
 @PublicApi
 class WeekViewPagingState internal constructor() {
+    private val loadScope = CoroutineScope(SupervisorJob())
     private val controller = WeekViewPagingController<WeekViewEvent>(
         startTime = { it.startTime },
         endTime = { it.endTime },
@@ -52,29 +57,44 @@ class WeekViewPagingState internal constructor() {
     private var onRangeChanged: ((firstVisibleDate: LocalDate, lastVisibleDate: LocalDate) -> Unit)? =
         null
     private var lastNotifiedFirstVisibleDate: LocalDate? = null
-    private var displayedEvents by mutableStateOf<List<WeekViewEvent>>(emptyList())
+    private val displayedEventsState = mutableStateOf<List<WeekViewEvent>>(emptyList())
 
     val events: List<WeekViewEvent>
-        get() = displayedEvents
+        get() = displayedEventsState.value
+
+    /** Observe paging events for composition; prefer this over [events] inside [WeekView]. */
+    internal val eventsState: State<List<WeekViewEvent>>
+        get() = displayedEventsState
+
+    private fun publishDisplayedEvents() {
+        displayedEventsState.value = controller.items
+    }
 
     internal fun updateCallbacks(
         onLoadMore: (startDate: LocalDate, endDate: LocalDate, submit: WeekViewPagingSubmit) -> Unit,
         onRangeChanged: ((firstVisibleDate: LocalDate, lastVisibleDate: LocalDate) -> Unit)?,
     ) {
         controller.updateCallbacks { startDate, endDate, submit ->
-            onLoadMore(startDate, endDate, WeekViewPagingSubmit(submit))
+            onLoadMore(startDate, endDate, wrapSubmit(submit))
         }
         this.onRangeChanged = onRangeChanged
     }
 
+    private fun wrapSubmit(
+        submit: (List<WeekViewEvent>) -> Unit,
+    ): WeekViewPagingSubmit = WeekViewPagingSubmit { events ->
+        submit(events)
+        publishDisplayedEvents()
+    }
+
     fun submit(events: List<WeekViewEvent>) {
         controller.submit(events)
-        displayedEvents = controller.items
+        publishDisplayedEvents()
     }
 
     fun refresh() {
         controller.refresh()
-        displayedEvents = controller.items
+        publishDisplayedEvents()
     }
 
     /**
@@ -94,18 +114,37 @@ class WeekViewPagingState internal constructor() {
             isLtr = isLtr,
         ).first
         controller.onScrollSettled(rangeStart)
-        displayedEvents = controller.items
+        publishDisplayedEvents()
     }
 
     internal fun onScrollSettled(
         firstVisibleDate: LocalDate,
         lastVisibleDate: LocalDate,
     ) {
-        displayedEvents = controller.items
+        publishDisplayedEvents()
         if (lastNotifiedFirstVisibleDate != firstVisibleDate) {
             lastNotifiedFirstVisibleDate = firstVisibleDate
             onRangeChanged?.invoke(firstVisibleDate, lastVisibleDate)
         }
+    }
+
+    internal fun launchPagingLoad(block: suspend () -> Unit) {
+        loadScope.launch {
+            try {
+                block()
+            } catch (cancellation: CancellationException) {
+                controller.abandonInFlightLoads()
+                publishDisplayedEvents()
+                throw cancellation
+            } catch (_: Exception) {
+                controller.abandonInFlightLoads()
+                publishDisplayedEvents()
+            }
+        }
+    }
+
+    internal fun disposeLoads() {
+        loadScope.cancel()
     }
 }
 
@@ -129,6 +168,9 @@ fun rememberWeekViewPagingState(
     val state = remember { WeekViewPagingState() }
     val latestOnLoadMore by rememberUpdatedState(onLoadMore)
     val latestOnRangeChanged by rememberUpdatedState(onRangeChanged)
+    DisposableEffect(state) {
+        onDispose { state.disposeLoads() }
+    }
     state.updateCallbacks(
         onLoadMore = { startDate, endDate, submit ->
             latestOnLoadMore(startDate, endDate, submit)
@@ -150,15 +192,21 @@ fun rememberWeekViewPagingState(
     onLoadMore: suspend (startDate: LocalDate, endDate: LocalDate) -> List<WeekViewEvent>,
     onRangeChanged: ((firstVisibleDate: LocalDate, lastVisibleDate: LocalDate) -> Unit)? = null,
 ): WeekViewPagingState {
-    val scope = rememberCoroutineScope()
-    return rememberWeekViewPagingState(
+    val state = remember { WeekViewPagingState() }
+    val latestOnLoadMore by rememberUpdatedState(onLoadMore)
+    val latestOnRangeChanged by rememberUpdatedState(onRangeChanged)
+    DisposableEffect(state) {
+        onDispose { state.disposeLoads() }
+    }
+    state.updateCallbacks(
         onLoadMore = { startDate, endDate, submit ->
-            scope.launch {
-                submit(onLoadMore(startDate, endDate))
+            state.launchPagingLoad {
+                submit(latestOnLoadMore(startDate, endDate))
             }
         },
-        onRangeChanged = onRangeChanged,
+        onRangeChanged = latestOnRangeChanged,
     )
+    return state
 }
 
 internal fun visibleDateRange(

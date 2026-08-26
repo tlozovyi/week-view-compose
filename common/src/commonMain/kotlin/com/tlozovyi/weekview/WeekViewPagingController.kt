@@ -38,8 +38,7 @@ class WeekViewPagingController<T>(
     private val cache = PaginatedEventsCache(startTime = startTime, endTime = endTime)
     private var fetchAnchorDate: LocalDate? = null
     private var displayedItems: List<T> = emptyList()
-    private val pendingPeriods = mutableSetOf<Period>()
-    private var inFlightPeriods: List<Period> = emptyList()
+    private val inFlightPeriods = mutableSetOf<Period>()
 
     val items: List<T>
         get() = displayedItems
@@ -48,14 +47,12 @@ class WeekViewPagingController<T>(
         onLoadMore: (startDate: LocalDate, endDate: LocalDate, submit: (List<T>) -> Unit) -> Unit,
     ) {
         this.onLoadMore = onLoadMore
-        retryPendingFetches()
     }
 
     fun submit(items: List<T>) {
         if (inFlightPeriods.isNotEmpty()) {
-            cache.update(items, loadedPeriods = inFlightPeriods)
-            pendingPeriods.removeAll(inFlightPeriods.toSet())
-            inFlightPeriods = emptyList()
+            cache.update(items, loadedPeriods = inFlightPeriods.toList())
+            inFlightPeriods.clear()
         } else {
             cache.update(items)
         }
@@ -64,18 +61,18 @@ class WeekViewPagingController<T>(
 
     fun refresh() {
         cache.clear()
-        pendingPeriods.clear()
-        inFlightPeriods = emptyList()
+        inFlightPeriods.clear()
         fetchAnchorDate?.let(::dispatchLoadRequest)
+    }
+
+    /** Clears in-flight fetch tracking when a load is cancelled or fails before [submit]. */
+    fun abandonInFlightLoads() {
+        inFlightPeriods.clear()
+        refreshDisplayedItems()
     }
 
     fun onScrollSettled(firstVisibleDate: LocalDate) {
         dispatchLoadRequest(firstVisibleDate)
-    }
-
-    private fun retryPendingFetches() {
-        pendingPeriods.clear()
-        fetchAnchorDate?.let(::dispatchLoadRequest)
     }
 
     private fun dispatchLoadRequest(firstVisibleDate: LocalDate) {
@@ -88,15 +85,14 @@ class WeekViewPagingController<T>(
 
         val periodsToFetch = cache.determinePeriodsToFetch(
             range = fetchRange,
-            excludedPeriods = pendingPeriods,
+            excludedPeriods = inFlightPeriods,
         )
         if (periodsToFetch.isEmpty()) {
             refreshDisplayedItems()
             return
         }
 
-        pendingPeriods.addAll(periodsToFetch)
-        inFlightPeriods = periodsToFetch
+        inFlightPeriods.addAll(periodsToFetch)
         refreshDisplayedItems()
 
         for (group in periodsToFetch.groupConsecutivePeriods()) {

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.0-rc4
+
+Fixes paging events not appearing after async `submit`.
+
+### Fixed
+
+- **Paging async submit** — [WeekView] now observes `pagingState.eventsState`; the scoped `submit` callback publishes into that state after the controller cache updates, so async loaders show events without waiting for scroll settlement.
+- **Paging load lifecycle** — suspend loader overload runs loads on a dedicated scope with `abandonInFlightLoads()` on failure/cancellation; in-flight period tracking simplified to avoid duplicate fetches on callback updates.
+
 ## 1.0.0-rc3
 
 Fixes pinch-zoom persistence jumps and paging initial-load race.

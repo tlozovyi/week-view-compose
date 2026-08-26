@@ -115,7 +115,12 @@ fun WeekView(
     val gestureScope = remember { WeekViewGestureScope() }
 
     val horizontalScrollingEnabled = style.horizontalScrollingEnabled && onFirstVisibleDateChange != null
-    val displayEvents = pagingState?.events ?: events
+    val displayEvents = if (pagingState != null) {
+        val pagingEvents by pagingState.eventsState
+        pagingEvents
+    } else {
+        events
+    }
     val eventClickEnabled = onEventClick != null
     val gridTapEnabled = eventClickEnabled || onEmptyViewClick != null
     val gridLongPressEnabled = onEmptyViewLongClick != null || onEventLongClick != null ||
@@ -495,7 +500,7 @@ fun WeekView(
                 hourHeightPx = canonicalHourHeightPx
                 gridScrollOffsetPx = pinchScrollOps.pinchScrollForHourHeight(canonicalHourHeightPx)
                 isPinchZoomActive = false
-                suppressTapGesturesUntilMillis = System.currentTimeMillis() + PINCH_TAP_SUPPRESSION_MILLIS
+                suppressTapGesturesUntilMillis = Clock.System.now().toEpochMilliseconds() + PINCH_TAP_SUPPRESSION_MILLIS
                 val canonicalHourHeightDp = with(density) { canonicalHourHeightPx.toDp() }
                 lastReportedHourHeightDp = canonicalHourHeightDp
                 lastReportedHourHeightPx = canonicalHourHeightPx
@@ -611,7 +616,7 @@ fun WeekView(
                 SideEffect {
                     gestureScope.isTapBlocked = {
                         isPinchZoomActive ||
-                            System.currentTimeMillis() < suppressTapGesturesUntilMillis
+                            Clock.System.now().toEpochMilliseconds() < suppressTapGesturesUntilMillis
                     }
                     gestureScope.bindEventDragGestures(
                         eventChipsProvider = { chipLayers.eventChips },

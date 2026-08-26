@@ -70,23 +70,47 @@ class WeekViewPagingControllerTest {
     }
 
     @Test
-    fun controller_retriesAfterCallbacksAreWired() {
-        val requestedRanges = mutableListOf<Pair<LocalDate, LocalDate>>()
+    fun controller_updateCallbacksDoesNotRedispatchInFlightLoads() {
+        var loadCount = 0
         val controller = WeekViewPagingController<TestEvent>(
             startTime = { it.startTime },
             endTime = { it.endTime },
-            onLoadMore = { _, _, _ -> },
+            onLoadMore = { _, _, _ ->
+                loadCount++
+            },
         )
 
         controller.onScrollSettled(LocalDate(2026, 8, 21))
-        assertEquals(0, controller.items.size)
+        assertEquals(1, loadCount)
 
-        controller.updateCallbacks { start, end, submit ->
-            requestedRanges += start to end
-            submit(listOf(TestEvent(LocalDate(2026, 8, 10).atTime(10, 0))))
+        controller.updateCallbacks { _, _, _ ->
+            loadCount++
         }
 
+        assertEquals(1, loadCount)
+    }
+
+    @Test
+    fun controller_secondScrollSettledBeforeSubmitStillCompletesLoad() {
+        val requestedRanges = mutableListOf<Pair<LocalDate, LocalDate>>()
+        var pendingSubmit: ((List<TestEvent>) -> Unit)? = null
+        val controller = WeekViewPagingController<TestEvent>(
+            startTime = { it.startTime },
+            endTime = { it.endTime },
+            onLoadMore = { start, end, submit ->
+                requestedRanges += start to end
+                pendingSubmit = submit
+            },
+        )
+
+        controller.onScrollSettled(LocalDate(2026, 8, 21))
+        controller.onScrollSettled(LocalDate(2026, 8, 22))
+
         assertEquals(1, requestedRanges.size)
+        assertEquals(0, controller.items.size)
+
+        pendingSubmit?.invoke(listOf(TestEvent(LocalDate(2026, 8, 10).atTime(10, 0))))
+
         assertEquals(1, controller.items.size)
     }
 
@@ -107,6 +131,26 @@ class WeekViewPagingControllerTest {
 
         controller.onScrollSettled(LocalDate(2026, 8, 21))
         assertEquals(1, loadCount)
+    }
+
+    @Test
+    fun controller_abandonInFlightLoads_allowsRetryAfterFailedFetch() {
+        var loadCount = 0
+        val controller = WeekViewPagingController<TestEvent>(
+            startTime = { it.startTime },
+            endTime = { it.endTime },
+            onLoadMore = { _, _, _ ->
+                loadCount++
+            },
+        )
+
+        controller.onScrollSettled(LocalDate(2026, 8, 21))
+        assertEquals(1, loadCount)
+
+        controller.abandonInFlightLoads()
+
+        controller.onScrollSettled(LocalDate(2026, 8, 21))
+        assertEquals(2, loadCount)
     }
 
     @Test
