@@ -70,8 +70,9 @@ fun SampleApp() {
     var savedHourHeightDp by remember { mutableStateOf<Dp?>(null) }
     var selectedMode by remember { mutableStateOf(SampleViewMode.ThreeDaySnapping) }
     var firstVisibleDate by remember(selectedMode) { mutableStateOf(today) }
-    var events by remember { mutableStateOf(sampleEvents(today)) }
-    var blockedTimes by remember { mutableStateOf(sampleBlockedTimes(today)) }
+    val sampleEventCatalog = remember(today) { sampleEvents(today) }
+    var events by remember(today) { mutableStateOf(sampleEventCatalog) }
+    var blockedTimes by remember(today) { mutableStateOf(sampleBlockedTimes(today)) }
     val scrollState = rememberWeekViewScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -80,7 +81,7 @@ fun SampleApp() {
             sampleEventsBetween(
                 startDate = startDate,
                 endDate = endDate,
-                referenceToday = today,
+                catalog = sampleEventCatalog,
             )
         },
         onRangeChanged = { firstVisible, lastVisible ->

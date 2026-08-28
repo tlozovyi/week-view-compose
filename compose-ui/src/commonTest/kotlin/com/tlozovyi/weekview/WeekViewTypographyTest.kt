@@ -17,7 +17,12 @@
 package com.tlozovyi.weekview
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.sp
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.datetime.LocalDate
@@ -44,6 +49,31 @@ class WeekViewTypographyTest {
         val style = WeekViewStyle(headerTextColor = Color.Green)
 
         assertEquals(Color.Green, style.headerDateColor(today, today))
+    }
+
+    @Test
+    fun eventTextStyleCombinesDecorations() {
+        val baseStyle = TextStyle(fontSize = 12.sp)
+        val spanStyle = WeekViewEventTextStyle(
+            bold = true,
+            italic = true,
+            underline = true,
+            strikethrough = true,
+        ).toSpanStyle(baseStyle)
+
+        assertEquals(FontWeight.Bold, spanStyle.fontWeight)
+        assertEquals(FontStyle.Italic, spanStyle.fontStyle)
+        assertEquals(
+            TextDecoration.combine(listOf(TextDecoration.Underline, TextDecoration.LineThrough)),
+            spanStyle.textDecoration,
+        )
+    }
+
+    @Test
+    fun eventTextStyleToTextStyleAppliesStrikethroughToBaseStyle() {
+        val merged = WeekViewEventTextStyle(strikethrough = true).toTextStyle(TextStyle(fontSize = 12.sp))
+
+        assertEquals(TextDecoration.LineThrough, merged.textDecoration)
     }
 }
 

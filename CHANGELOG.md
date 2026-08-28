@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.0.0-rc5
+
+Per-event chip text styles.
+
+### Added
+
+- **`WeekViewEventTextStyle`** on **`WeekViewEvent`** — optional **`titleTextStyle`** and **`subtitleTextStyle`** with combinable **`bold`**, **`italic`**, **`underline`**, and **`strikethrough`**
+- Sample includes all 16 `WeekViewEventTextStyle` flag combinations as timed events on today (19:00–21:30), plus six all-day style examples on tomorrow (default, strikethrough, bold, italic+underline, all flags, mixed title/subtitle)
+
+### Fixed
+
+- **Grid event hit-testing** — chip bounds use the same Dp-snapped grid layout as drawing and gesture hit-tests (`resolveDisplayGridLayout`); vertical position uses `gridHeightPx` for consistent time mapping after pinch-to-zoom
+- **Main-thread jank on launch** — chip bounds/visibility updates moved out of composition into `SideEffect`; scroll clamp and viewport height only update when values change; paging callback wiring moved to `SideEffect`
+- **Sample paging mode** — uses suspend `rememberWeekViewPagingState` loader and a cached event catalog instead of rebuilding the full list synchronously on the main thread
+- **Styled chip text ANR** — uniform `titleTextStyle`/`subtitleTextStyle` (e.g. strikethrough on both lines) now use the original plain-text measure path via `TextStyle`; `AnnotatedString` is only used when title and subtitle styles differ, with a trim-loop guard
+
 ## 1.0.0-rc4
 
 Fixes paging events not appearing after async `submit`.

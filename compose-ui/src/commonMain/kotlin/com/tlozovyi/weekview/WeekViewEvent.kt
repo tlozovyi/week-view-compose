@@ -29,6 +29,8 @@ import kotlinx.datetime.LocalDateTime
  * @property subtitle Optional secondary line shown below the title on timed chips (or inline on all-day chips).
  * @property isAllDay When `true`, the event is drawn in the header all-day row instead of the grid.
  * @property style Optional per-event colors and shape; unset fields fall back to [WeekViewStyle].
+ * @property titleTextStyle Typography decorations for the title line (bold, italic, underline, strikethrough).
+ * @property subtitleTextStyle Typography decorations for the subtitle line when present.
  */
 @PublicApi
 data class WeekViewEvent(
@@ -39,4 +41,6 @@ data class WeekViewEvent(
     val subtitle: String? = null,
     val isAllDay: Boolean = false,
     val style: WeekViewEventStyle? = null,
+    val titleTextStyle: WeekViewEventTextStyle = WeekViewEventTextStyle.Default,
+    val subtitleTextStyle: WeekViewEventTextStyle = WeekViewEventTextStyle.Default,
 )

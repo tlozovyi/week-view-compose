@@ -17,9 +17,12 @@
 package com.tlozovyi.weekview
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 
 internal fun WeekViewStyle.eventTextStyle(textColor: Color): TextStyle {
     return TextStyle(
@@ -59,6 +62,40 @@ internal fun WeekViewStyle.weekNumberTextStyle(): TextStyle {
         color = weekNumberTextColor,
         fontSize = weekNumberTextSizeSp,
         fontFamily = fontFamily,
+    )
+}
+
+internal fun WeekViewEventTextStyle.toSpanStyle(baseStyle: TextStyle): SpanStyle {
+    val decorations = buildList {
+        if (underline) {
+            add(TextDecoration.Underline)
+        }
+        if (strikethrough) {
+            add(TextDecoration.LineThrough)
+        }
+    }
+    return SpanStyle(
+        fontWeight = if (bold) FontWeight.Bold else baseStyle.fontWeight,
+        fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal,
+        textDecoration = when (decorations.size) {
+            0 -> null
+            1 -> decorations.single()
+            else -> TextDecoration.combine(decorations)
+        },
+    )
+}
+
+internal fun WeekViewEventTextStyle.toTextStyle(baseStyle: TextStyle): TextStyle {
+    if (this == WeekViewEventTextStyle.Default) {
+        return baseStyle
+    }
+    val spanStyle = toSpanStyle(baseStyle)
+    return baseStyle.merge(
+        TextStyle(
+            fontWeight = spanStyle.fontWeight,
+            fontStyle = spanStyle.fontStyle,
+            textDecoration = spanStyle.textDecoration,
+        ),
     )
 }
 

@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-package com.tlozovyi.weekview.sample
+package com.tlozovyi.weekview
 
-import com.tlozovyi.weekview.WeekViewEvent
-import kotlinx.datetime.LocalDate
-
-internal fun sampleEventsBetween(
-    startDate: LocalDate,
-    endDate: LocalDate,
-    catalog: List<WeekViewEvent>,
-): List<WeekViewEvent> {
-    return catalog.filter { event ->
-        val eventDate = event.startTime.date
-        eventDate >= startDate && eventDate <= endDate
+/**
+ * Typography decorations for event chip labels.
+ *
+ * Set on [WeekViewEvent.titleTextStyle] and [WeekViewEvent.subtitleTextStyle]; attributes combine
+ * freely (for example strikethrough and italic together).
+ */
+@PublicApi
+data class WeekViewEventTextStyle(
+    val bold: Boolean = false,
+    val italic: Boolean = false,
+    val underline: Boolean = false,
+    val strikethrough: Boolean = false,
+) {
+    companion object {
+        /** Default chip label styling (no decorations). */
+        val Default = WeekViewEventTextStyle()
     }
 }

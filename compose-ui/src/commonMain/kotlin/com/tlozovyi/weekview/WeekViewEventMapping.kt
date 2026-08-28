@@ -82,7 +82,10 @@ internal fun WeekViewEvent.toResolvedEntity(
         endTime = endTime,
         subtitle = subtitle,
         isAllDay = isAllDay,
-        style = this.style.toEntityStyle(style, density),
+        style = this.style.toEntityStyle(style, density).copy(
+            titleTextStyle = titleTextStyle,
+            subtitleTextStyle = subtitleTextStyle,
+        ),
         data = this,
     )
 }

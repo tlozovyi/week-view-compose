@@ -22,6 +22,7 @@ Compose Multiplatform calendar week view for **Android** and **iOS**.
 - Long-press drag-and-drop to move timed events (15-minute snap, edge auto-scroll)
 - Current-time indicator line and dot
 - Per-event styling via `WeekViewEventStyle` (colors, borders, corner radius, lined/dotted fill patterns)
+- Per-event label typography via `WeekViewEventTextStyle` (bold, italic, underline, strikethrough — combinable)
 - Extensive theming via `WeekViewStyle` (weekend backgrounds, week-number badge, header line/shadow, shared `fontFamily`)
 - Shared layout algorithms in a platform-agnostic `common` module (`kotlinx-datetime`)
 - Written in Kotlin
@@ -235,7 +236,25 @@ WeekViewEvent(
     startTime = start,
     endTime = end,
 )
+```
 
+Completed or cancelled events (strikethrough, combinable with other decorations):
+
+```kotlin
+WeekViewEvent(
+    id = 5,
+    title = "Budget review",
+    subtitle = "Done",
+    startTime = start,
+    endTime = end,
+    titleTextStyle = WeekViewEventTextStyle(strikethrough = true),
+    subtitleTextStyle = WeekViewEventTextStyle(strikethrough = true, italic = true),
+)
+```
+
+Adaptive text size:
+
+```kotlin
 WeekViewStyle(
     adaptiveEventTextSize = true,  // shrink labels to fit short chips (default false)
     eventTextSizeSp = 12.sp,

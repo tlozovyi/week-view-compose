@@ -20,6 +20,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.atTime
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextDecoration
 
 class WeekViewTextFitterTest {
 
@@ -74,5 +77,32 @@ class WeekViewTextFitterTest {
 
         assertEquals("Demo", eventChipText(entity, includeSubtitle = false))
         assertEquals("Demo\nDetails", eventChipText(entity, includeSubtitle = true))
+    }
+
+    @Test
+    fun eventChipAnnotatedTextAppliesIndependentTitleAndSubtitleStyles() {
+        val entity = ResolvedWeekViewEntity.Event(
+            id = 1,
+            title = "Done",
+            subtitle = "Room 4B",
+            startTime = LocalDate(2026, 8, 20).atTime(9, 0),
+            endTime = LocalDate(2026, 8, 20).atTime(10, 0),
+            isAllDay = false,
+            style = ResolvedWeekViewEntity.Style(
+                titleTextStyle = WeekViewEventTextStyle(strikethrough = true),
+                subtitleTextStyle = WeekViewEventTextStyle(italic = true),
+            ),
+            data = null,
+        )
+
+        val annotated = eventChipAnnotatedText(entity, TextStyle(), includeSubtitle = true)
+
+        assertEquals("Done\nRoom 4B", annotated.text)
+        assertEquals(2, annotated.spanStyles.size)
+        assertEquals(
+            TextDecoration.LineThrough,
+            annotated.spanStyles[0].item.textDecoration,
+        )
+        assertEquals(FontStyle.Italic, annotated.spanStyles[1].item.fontStyle)
     }
 }

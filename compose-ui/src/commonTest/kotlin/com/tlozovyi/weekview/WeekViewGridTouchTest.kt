@@ -200,6 +200,35 @@ class EventChipBoundsCalculatorBlockedTimeTest {
 
         assertEquals(120f, bounds.width(), 0.01f)
     }
+
+    @Test
+    fun calculateSingleEventUsesResolvedGridHeightForVerticalPosition() {
+        val style = WeekViewStyle(minHour = 0, maxHour = 10)
+        val density = Density(density = 1.75f)
+        val rawLayout = WeekViewLayout(
+            viewportWidthPx = 400f,
+            viewportHeightPx = 800f,
+            timeColumnWidthPx = 40f,
+            headerHeightPx = 80f,
+            hourHeightPx = 50f,
+            dayWidthPx = 120f,
+            columnGapPx = 1f,
+            viewportGridWidthPx = 360f,
+            contentGridWidthPx = 120f,
+            gridHeightPx = 500f,
+            visibleDates = listOf(LocalDate(2026, 8, 20)),
+            renderDates = listOf(LocalDate(2026, 8, 20)),
+            scrollBufferDays = 0,
+        )
+        val resolvedLayout = with(density) { resolveDisplayGridLayout(rawLayout, style) }
+        val chip = timedEventChip(minutes = 120)
+        val calculator = EventChipBoundsCalculator(resolvedLayout, style, density)
+
+        val top = calculator.calculateSingleEvent(chip, dayStartX = 0f).top
+        val expectedTop = resolvedLayout.gridHeightPx * (120f / (style.hoursCount * 60))
+
+        assertEquals(expectedTop, top, 0.01f)
+    }
 }
 
 private fun sampleGridLayout(
@@ -231,6 +260,30 @@ private fun sampleEvent(id: Long, date: LocalDate): WeekViewEvent {
         startTime = date.atTime(10, 0),
         endTime = date.atTime(11, 0),
     )
+}
+
+private fun timedEventChip(minutes: Int): EventChip {
+    val startTime = LocalDate(2026, 8, 20).atTime(9, 0)
+    val endTime = startTime.date.atTime(10, 0)
+    return EventChip(
+        event = ResolvedWeekViewEntity.Event(
+            id = 1,
+            title = "Timed",
+            startTime = startTime,
+            endTime = endTime,
+            subtitle = null,
+            isAllDay = false,
+            style = ResolvedWeekViewEntity.Style(),
+            data = null,
+        ),
+        index = 0,
+        startTime = startTime,
+        endTime = endTime,
+    ).apply {
+        relativeStart = 0f
+        relativeWidth = 1f
+        minutesFromStartHour = minutes
+    }
 }
 
 private fun sampleEventChip(

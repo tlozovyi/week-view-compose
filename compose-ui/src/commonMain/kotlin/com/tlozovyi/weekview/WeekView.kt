@@ -326,25 +326,30 @@ fun WeekView(
             expandProgress = expandProgress,
         )
 
-        applyAllDayEventVisibility(
-            allDayEventChips = chipLayers.allDayEventChips,
-            allDayChipsByDate = chipLayers.allDayChipsByDate,
-            renderDates = derivedLayouts.layout.renderDates,
-            allDayEventsExpanded = useExpandedAllDayLayout,
-            arrangeAllDayEventsVertically = style.arrangeAllDayEventsVertically,
-        )
-        prepareAllDayEventChipBounds(
-            allDayEventChips = chipLayers.allDayEventChips,
-            layout = derivedLayouts.allDayChipBoundsLayout,
-            style = style,
-            density = density,
-            chipsByDate = chipLayers.allDayChipsByDate,
-            useExpandedAllDayLayout = useExpandedAllDayLayout,
-        )
+        val hitTestGridLayout = remember(derivedLayouts.gridLayout, style, density) {
+            with(density) {
+                resolveDisplayGridLayout(derivedLayouts.gridLayout, style)
+            }
+        }
 
         SideEffect {
+            applyAllDayEventVisibility(
+                allDayEventChips = chipLayers.allDayEventChips,
+                allDayChipsByDate = chipLayers.allDayChipsByDate,
+                renderDates = derivedLayouts.layout.renderDates,
+                allDayEventsExpanded = useExpandedAllDayLayout,
+                arrangeAllDayEventsVertically = style.arrangeAllDayEventsVertically,
+            )
+            prepareAllDayEventChipBounds(
+                allDayEventChips = chipLayers.allDayEventChips,
+                layout = derivedLayouts.allDayChipBoundsLayout,
+                style = style,
+                density = density,
+                chipsByDate = chipLayers.allDayChipsByDate,
+                useExpandedAllDayLayout = useExpandedAllDayLayout,
+            )
             prepareEventChipBounds(
-                layout = derivedLayouts.gridLayout,
+                layout = hitTestGridLayout,
                 style = style,
                 density = density,
                 chipsByDate = chipLayers.chipsByDate,
@@ -382,15 +387,22 @@ fun WeekView(
             hasScrolledToCurrentTimeOnLaunch = true
         }
 
-        val pinchScrollOps = createPinchScrollOps(
-            style = style,
-            density = density,
-            gridViewportHeightPx = gridViewportHeightPx,
-            pinchBaselineScrollOffsetPx = { pinchBaselineScrollOffsetPx },
-            pinchBaselineLayoutGridHeightPx = { pinchBaselineLayoutGridHeightPx },
-            pinchBaselineFocalY = { pinchBaselineFocalY },
-            hourHeightPx = hourHeightPx,
-        )
+        val pinchScrollOps = remember(
+            style,
+            density,
+            gridViewportHeightPx,
+            hourHeightPx,
+        ) {
+            createPinchScrollOps(
+                style = style,
+                density = density,
+                gridViewportHeightPx = gridViewportHeightPx,
+                pinchBaselineScrollOffsetPx = { pinchBaselineScrollOffsetPx },
+                pinchBaselineLayoutGridHeightPx = { pinchBaselineLayoutGridHeightPx },
+                pinchBaselineFocalY = { pinchBaselineFocalY },
+                hourHeightPx = hourHeightPx,
+            )
+        }
 
         WeekViewProgrammaticScrollEffect(
             scrollState = scrollState,
@@ -441,7 +453,10 @@ fun WeekView(
 
         SideEffect {
             if (!isPinchZoomActive) {
-                gridScrollOffsetPx = pinchScrollOps.clampGridScrollOffsetPx(gridScrollOffsetPx)
+                val clampedScrollOffsetPx = pinchScrollOps.clampGridScrollOffsetPx(gridScrollOffsetPx)
+                if (clampedScrollOffsetPx != gridScrollOffsetPx) {
+                    gridScrollOffsetPx = clampedScrollOffsetPx
+                }
             }
         }
 
@@ -594,16 +609,18 @@ fun WeekView(
                     .fillMaxWidth()
                     .clipToBounds()
                     .background(style.backgroundColor)
-                    .onSizeChanged { measuredGridViewportHeightPx = it.height.toFloat() },
+                    .onSizeChanged { size ->
+                        val heightPx = size.height.toFloat()
+                        if (measuredGridViewportHeightPx != heightPx) {
+                            measuredGridViewportHeightPx = heightPx
+                        }
+                    },
             ) {
                 val layoutGridHeightPx = with(density) {
                     layoutHeightPx(derivedLayouts.gridLayout.gridHeightPx)
                 }
                 val gridHeightDp = with(density) { layoutGridHeightPx.toDp() }
                 val displayGridLayout = derivedLayouts.gridLayout
-                val hitTestGridLayout = with(density) {
-                    resolveDisplayGridLayout(displayGridLayout, style)
-                }
 
                 val dragGhostChip = rememberDragGhostChip(
                     dragState = dragState,

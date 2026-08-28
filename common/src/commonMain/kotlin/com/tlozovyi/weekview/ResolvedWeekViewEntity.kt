@@ -108,6 +108,10 @@ sealed class ResolvedWeekViewEntity {
         val cornerRadius: Int? = null,
         /** Optional overlay pattern drawn on the chip background. */
         val pattern: FillPattern? = null,
+        /** Title line typography decorations. */
+        val titleTextStyle: WeekViewEventTextStyle = WeekViewEventTextStyle.Default,
+        /** Subtitle line typography decorations. */
+        val subtitleTextStyle: WeekViewEventTextStyle = WeekViewEventTextStyle.Default,
     )
 
     /** Hatch or dot overlay for chip backgrounds. */

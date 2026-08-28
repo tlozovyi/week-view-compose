@@ -156,7 +156,7 @@ internal class EventChipBoundsCalculator(
 
     private fun calculateDistanceFromTop(minutesFromStart: Int): Float {
         val portionOfDay = minutesFromStart.toFloat() / minutesPerDay
-        return hourHeightPx * hoursPerDay * portionOfDay
+        return layout.gridHeightPx * portionOfDay
     }
 }
 

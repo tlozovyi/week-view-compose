@@ -18,6 +18,7 @@ package com.tlozovyi.weekview
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -171,12 +172,14 @@ fun rememberWeekViewPagingState(
     DisposableEffect(state) {
         onDispose { state.disposeLoads() }
     }
-    state.updateCallbacks(
-        onLoadMore = { startDate, endDate, submit ->
-            latestOnLoadMore(startDate, endDate, submit)
-        },
-        onRangeChanged = latestOnRangeChanged,
-    )
+    SideEffect {
+        state.updateCallbacks(
+            onLoadMore = { startDate, endDate, submit ->
+                latestOnLoadMore(startDate, endDate, submit)
+            },
+            onRangeChanged = latestOnRangeChanged,
+        )
+    }
     return state
 }
 
@@ -198,14 +201,16 @@ fun rememberWeekViewPagingState(
     DisposableEffect(state) {
         onDispose { state.disposeLoads() }
     }
-    state.updateCallbacks(
-        onLoadMore = { startDate, endDate, submit ->
-            state.launchPagingLoad {
-                submit(latestOnLoadMore(startDate, endDate))
-            }
-        },
-        onRangeChanged = latestOnRangeChanged,
-    )
+    SideEffect {
+        state.updateCallbacks(
+            onLoadMore = { startDate, endDate, submit ->
+                state.launchPagingLoad {
+                    submit(latestOnLoadMore(startDate, endDate))
+                }
+            },
+            onRangeChanged = latestOnRangeChanged,
+        )
+    }
     return state
 }
 

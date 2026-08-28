@@ -22,11 +22,152 @@ import com.tlozovyi.weekview.WeekViewFillPattern
 import com.tlozovyi.weekview.WeekViewBlockedTime
 import com.tlozovyi.weekview.WeekViewEvent
 import com.tlozovyi.weekview.WeekViewEventStyle
+import com.tlozovyi.weekview.WeekViewEventTextStyle
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.atTime
 
 internal fun LocalDate.plusDays(days: Int): LocalDate =
     LocalDate.fromEpochDays(toEpochDays() + days)
+
+private fun allWeekViewEventTextStyles(): List<WeekViewEventTextStyle> {
+    return buildList {
+        for (bold in listOf(false, true)) {
+            for (italic in listOf(false, true)) {
+                for (underline in listOf(false, true)) {
+                    for (strikethrough in listOf(false, true)) {
+                        add(
+                            WeekViewEventTextStyle(
+                                bold = bold,
+                                italic = italic,
+                                underline = underline,
+                                strikethrough = strikethrough,
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun WeekViewEventTextStyle.label(): String {
+    if (this == WeekViewEventTextStyle.Default) {
+        return "Default"
+    }
+    return buildList {
+        if (bold) add("Bold")
+        if (italic) add("Italic")
+        if (underline) add("Underline")
+        if (strikethrough) add("Strike")
+    }.joinToString(" + ")
+}
+
+private fun textStyleShowcaseEvents(today: LocalDate): List<WeekViewEvent> {
+    val showcaseColors = listOf(
+        Color(0xFF9575CD),
+        Color(0xFFAED581),
+        Color(0xFF90A4AE),
+        Color(0xFFFF8A65),
+    )
+    return allWeekViewEventTextStyles().mapIndexed { index, textStyle ->
+        val startMinute = index * 15
+        val startHour = 19 + startMinute / 60
+        val minute = startMinute % 60
+        WeekViewEvent(
+            id = 2_001L + index,
+            title = textStyle.label(),
+            subtitle = "Chip subtitle",
+            startTime = today.atTime(startHour, minute),
+            endTime = today.atTime(startHour, minute + 14),
+            style = WeekViewEventStyle(
+                backgroundColor = showcaseColors[index % showcaseColors.size],
+            ),
+            titleTextStyle = textStyle,
+            subtitleTextStyle = textStyle,
+        )
+    }
+}
+
+private fun allDayTextStyleShowcaseEvents(day: LocalDate): List<WeekViewEvent> {
+    val nextDay = day.plusDays(1)
+    val showcaseColors = listOf(
+        Color(0xFF7986CB),
+        Color(0xFF4DB6AC),
+        Color(0xFFFFB74D),
+        Color(0xFFE57373),
+        Color(0xFFBA68C8),
+    )
+    val examples = listOf(
+        AllDayTextStyleExample(
+            title = "All-day default",
+            subtitle = "Plain label",
+            titleTextStyle = WeekViewEventTextStyle.Default,
+            subtitleTextStyle = WeekViewEventTextStyle.Default,
+        ),
+        AllDayTextStyleExample(
+            title = "All-day done",
+            subtitle = "Cancelled",
+            titleTextStyle = WeekViewEventTextStyle(strikethrough = true),
+            subtitleTextStyle = WeekViewEventTextStyle(strikethrough = true),
+        ),
+        AllDayTextStyleExample(
+            title = "All-day bold",
+            subtitle = "Important",
+            titleTextStyle = WeekViewEventTextStyle(bold = true),
+            subtitleTextStyle = WeekViewEventTextStyle(bold = true),
+        ),
+        AllDayTextStyleExample(
+            title = "All-day italic + underline",
+            subtitle = "Emphasis",
+            titleTextStyle = WeekViewEventTextStyle(italic = true, underline = true),
+            subtitleTextStyle = WeekViewEventTextStyle(italic = true, underline = true),
+        ),
+        AllDayTextStyleExample(
+            title = "All-day full style",
+            subtitle = "Bold Italic Underline Strike",
+            titleTextStyle = WeekViewEventTextStyle(
+                bold = true,
+                italic = true,
+                underline = true,
+                strikethrough = true,
+            ),
+            subtitleTextStyle = WeekViewEventTextStyle(
+                bold = true,
+                italic = true,
+                underline = true,
+                strikethrough = true,
+            ),
+        ),
+        AllDayTextStyleExample(
+            title = "Mixed title strike",
+            subtitle = "Italic subtitle",
+            titleTextStyle = WeekViewEventTextStyle(strikethrough = true),
+            subtitleTextStyle = WeekViewEventTextStyle(italic = true),
+        ),
+    )
+    return examples.mapIndexed { index, example ->
+        WeekViewEvent(
+            id = 3_001L + index,
+            title = example.title,
+            subtitle = example.subtitle,
+            startTime = day.atTime(0, 0),
+            endTime = nextDay.atTime(0, 0),
+            isAllDay = true,
+            style = WeekViewEventStyle(
+                backgroundColor = showcaseColors[index % showcaseColors.size],
+            ),
+            titleTextStyle = example.titleTextStyle,
+            subtitleTextStyle = example.subtitleTextStyle,
+        )
+    }
+}
+
+private data class AllDayTextStyleExample(
+    val title: String,
+    val subtitle: String,
+    val titleTextStyle: WeekViewEventTextStyle,
+    val subtitleTextStyle: WeekViewEventTextStyle,
+)
 
 internal fun sampleEvents(today: LocalDate): List<WeekViewEvent> {
     val yesterday = today.plusDays(-1)
@@ -419,7 +560,7 @@ internal fun sampleEvents(today: LocalDate): List<WeekViewEvent> {
             isAllDay = true,
             style = WeekViewEventStyle(backgroundColor = Color(0xFFAB47BC)),
         ),
-    )
+    ) + textStyleShowcaseEvents(today) + allDayTextStyleShowcaseEvents(tomorrow)
 }
 
 internal fun sampleBlockedTimes(today: LocalDate): List<WeekViewBlockedTime> {

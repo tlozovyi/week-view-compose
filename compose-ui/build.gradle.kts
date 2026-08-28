@@ -23,7 +23,7 @@ kotlin {
             languageSettings.optIn("kotlin.time.ExperimentalTime")
         }
         commonMain.dependencies {
-            implementation(project(":common"))
+            api(project(":common"))
             implementation(libs.kotlinx.datetime)
             implementation(compose.runtime)
             implementation(compose.foundation)
