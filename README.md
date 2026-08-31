@@ -4,7 +4,7 @@
 
 Compose Multiplatform calendar week view for **Android** and **iOS**.
 
-**Status:** `1.0.0-rc5` — calendar grid, event chips, per-event label typography, blocked time, gestures, programmatic scroll, month-based paging, visual polish, and RTL layout via `LocalLayoutDirection`.
+**Status:** `1.0.0-rc6` — calendar grid, event chips, per-event label typography, blocked time, gestures, programmatic scroll, month-based paging, visual polish, and RTL layout via `LocalLayoutDirection`.
 
 ## Features
 
@@ -33,11 +33,11 @@ Compose Multiplatform calendar week view for **Android** and **iOS**.
 - Emoji support in event titles
 - Accessibility
 
-## Versions (1.0.0-rc5)
+## Versions (1.0.0-rc6)
 
 | | |
 |---|---|
-| **Release** | 1.0.0-rc5 |
+| **Release** | 1.0.0-rc6 |
 | **minSdk (Android)** | 24 |
 | **compileSdk / targetSdk** | 35 |
 | **Kotlin** | 2.1.20 |
@@ -75,7 +75,7 @@ repositories {
 
 ```kotlin
 // commonMain (Kotlin Multiplatform)
-implementation("com.github.tlozovyi.week-view-compose:compose-ui:1.0.0-rc5")
+implementation("com.github.tlozovyi.week-view-compose:compose-ui:1.0.0-rc6")
 ```
 
 `compose-ui` re-exports the `common` module (`api` dependency), so public types such as `WeekViewEventTextStyle` and `WeekViewPagingController` are available without a separate `common` artifact on JitPack.
@@ -410,7 +410,7 @@ open iosApp/iosApp.xcodeproj
 
 ## Versioning
 
-Release history and API changes are in [CHANGELOG.md](CHANGELOG.md). Current release: **`1.0.0-rc5`**.
+Release history and API changes are in [CHANGELOG.md](CHANGELOG.md). Current release: **`1.0.0-rc6`**.
 
 ## License
 

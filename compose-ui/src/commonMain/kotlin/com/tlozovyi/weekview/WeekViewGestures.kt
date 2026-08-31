@@ -66,7 +66,7 @@ internal fun Modifier.weekViewPinchZoom(
     gestureScope: WeekViewGestureScope,
     zoomConfig: () -> WeekViewPinchZoomConfig,
     hourHeightPx: () -> Float,
-    onPinchStart: (focalYInViewportPx: Float) -> Unit,
+    onPinchStart: (focalYInContentPx: Float) -> Unit,
     onPinchStep: (newHourHeightPx: Float) -> Unit,
     onPinchEnd: (newHourHeightPx: Float) -> Unit,
 ): Modifier {
@@ -93,8 +93,8 @@ internal fun Modifier.weekViewPinchZoom(
             }
 
             val baselineHourHeightPx = hourHeightPx()
-            val baselineFocalYInViewportPx = event.pinchCentroid().y
-            onPinchStart(baselineFocalYInViewportPx)
+            val baselineFocalYInContentPx = event.pinchCentroid().y
+            onPinchStart(baselineFocalYInContentPx)
 
             var latestHourHeightPx = baselineHourHeightPx
             var latestSpan = initialSpan
@@ -114,7 +114,11 @@ internal fun Modifier.weekViewPinchZoom(
                         baselineHourHeightPx = baselineHourHeightPx,
                         cumulativeScale = cumulativeScale,
                         baselineScrollOffsetPx = 0f,
-                        focalYInViewportPx = baselineFocalYInViewportPx,
+                        focalYInViewportPx = focalYInViewportPx(
+                            focalYInContentPx = baselineFocalYInContentPx,
+                            scrollOffsetPx = gestureScope.gridScrollOffsetPx,
+                            viewportGridHeightPx = zoomConfig().viewportGridHeightPx,
+                        ),
                         config = zoomConfig(),
                     )
                     if (result != null) {
@@ -341,7 +345,6 @@ internal fun Modifier.weekViewTimedEventGestures(
                         horizontalTranslationPx = gestureScope.horizontalTranslationPx,
                         displayGridLayout = layout,
                         style = gestureScope.style,
-                        gridScrollOffsetPx = gestureScope.gridScrollOffsetPx,
                         onEventClick = gestureScope.onEventClick,
                         onEmptyViewClick = gestureScope.onEmptyViewClick,
                     )
@@ -356,7 +359,6 @@ internal fun Modifier.weekViewTimedEventGestures(
                         horizontalTranslationPx = gestureScope.horizontalTranslationPx,
                         displayGridLayout = layout,
                         style = gestureScope.style,
-                        gridScrollOffsetPx = gestureScope.gridScrollOffsetPx,
                         dragEnabled = gestureScope.dragEnabled,
                         onEventLongClick = gestureScope.onEventLongClick,
                         onEmptyViewLongClick = gestureScope.onEmptyViewLongClick,
@@ -364,7 +366,7 @@ internal fun Modifier.weekViewTimedEventGestures(
                     if (longPressResult.shouldStartDrag) {
                         val event = gestureScope.eventChips.findEventAt(
                             x = down.position.x - gestureScope.horizontalTranslationPx,
-                            y = down.position.y + gestureScope.gridScrollOffsetPx,
+                            y = gridContentYForHitTest(down.position.y),
                         )
                         if (event != null) {
                             gestureScope.onDragStart(event, down.position)

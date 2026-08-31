@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.0-rc6
+
+Grid tap location detection after pinch-to-zoom and vertical scroll.
+
+### Fixed
+
+- **Grid event hit-testing** — pointer Y on the timed grid canvas is already in content space (`weekViewGridScroll` applies scroll via layout placement); hit-testing no longer adds `gridScrollOffsetPx` a second time. Fixes wrong or empty-slot taps after zoom and when scrolled.
+- **Pinch focal point after scroll** — pinch start again converts the centroid from content Y to viewport Y via `focalYInViewportPx`, so zoom scroll math stays aligned with the visible focal point (regression from 1.0.0-rc3 hardening).
+- **Stale chip bounds** — timed event bounds are cleared before each recalculation (same as all-day chips).
+- **Drag edge detection** — viewport Y from canvas coordinates uses the same integer scroll offset as layout placement.
+
 ## 1.0.0-rc5
 
 Per-event chip text styles.

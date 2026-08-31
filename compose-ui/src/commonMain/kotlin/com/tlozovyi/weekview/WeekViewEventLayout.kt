@@ -25,6 +25,8 @@ internal fun prepareEventChipBounds(
     density: Density,
     chipsByDate: Map<LocalDate, List<EventChip>>,
 ) {
+    chipsByDate.values.flatten().forEach { it.bounds.setEmpty() }
+
     layout.renderDates.forEachIndexed { dateIndex, date ->
         chipsByDate[date].orEmpty().calculateBoundsForDate(
             dateIndex = dateIndex,

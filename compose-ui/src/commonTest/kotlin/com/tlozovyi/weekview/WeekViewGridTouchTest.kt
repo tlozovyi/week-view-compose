@@ -64,21 +64,51 @@ class WeekViewGridTouchTest {
     }
 
     @Test
-    fun calculateTimeFromPoint_accountsForVerticalScrollOffset() {
+    fun calculateTimeFromPointUsesCanvasContentCoordinates() {
         val layout = sampleGridLayout()
         val time = calculateTimeFromPoint(
             touchX = 60f,
-            touchY = 50f,
+            touchY = 150f,
             layout = layout,
             style = WeekViewStyle.Default,
             horizontalTranslationPx = 0f,
-            gridScrollOffsetPx = 100f,
         )
 
         assertEquals(
             LocalDateTime(date = LocalDate(2026, 8, 20), time = kotlinx.datetime.LocalTime(3, 0)),
             time,
         )
+    }
+
+    @Test
+    fun gridContentYForHitTestDoesNotApplyScrollTwice() {
+        assertEquals(551f, gridContentYForHitTest(pointerYInCanvasPx = 551f))
+    }
+
+    @Test
+    fun resolveGridTapFindsEventUsingCanvasContentCoordinates() {
+        val date = LocalDate(2026, 8, 20)
+        val chip = sampleEventChip(
+            id = 1,
+            date = date,
+            left = 10f,
+            top = 500f,
+            right = 80f,
+            bottom = 560f,
+        )
+        var tappedEvent: WeekViewEvent? = null
+
+        resolveGridTap(
+            offset = Offset(40f, 551f),
+            eventChips = listOf(chip),
+            horizontalTranslationPx = 0f,
+            displayGridLayout = sampleGridLayout(),
+            style = WeekViewStyle.Default,
+            onEventClick = { tappedEvent = it },
+            onEmptyViewClick = null,
+        )
+
+        assertEquals(chip.toWeekViewEvent(), tappedEvent)
     }
 
     @Test
@@ -93,7 +123,6 @@ class WeekViewGridTouchTest {
             horizontalTranslationPx = 0f,
             displayGridLayout = layout,
             style = WeekViewStyle.Default,
-            gridScrollOffsetPx = 0f,
             onEventClick = null,
             onEmptyViewClick = { tappedTime = it },
         )
@@ -114,7 +143,6 @@ class WeekViewGridTouchTest {
             horizontalTranslationPx = 0f,
             displayGridLayout = sampleGridLayout(),
             style = WeekViewStyle.Default,
-            gridScrollOffsetPx = 0f,
             onEventClick = { tappedEvent = it },
             onEmptyViewClick = { tappedTime = it },
         )
@@ -136,7 +164,6 @@ class WeekViewGridTouchTest {
             horizontalTranslationPx = 0f,
             displayGridLayout = layout,
             style = WeekViewStyle.Default,
-            gridScrollOffsetPx = 0f,
             dragEnabled = true,
             onEventLongClick = { false },
             onEmptyViewLongClick = null,
@@ -157,7 +184,6 @@ class WeekViewGridTouchTest {
             horizontalTranslationPx = 0f,
             displayGridLayout = sampleGridLayout(),
             style = WeekViewStyle.Default,
-            gridScrollOffsetPx = 0f,
             dragEnabled = true,
             onEventLongClick = { true },
             onEmptyViewLongClick = null,

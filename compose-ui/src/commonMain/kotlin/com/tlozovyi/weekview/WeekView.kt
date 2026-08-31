@@ -491,11 +491,15 @@ fun WeekView(
         }
 
         val onPinchStart = remember(pinchScrollOps, gridViewportHeightPx) {
-            { focalYInViewportPx: Float ->
+            { focalYInContentPx: Float ->
                 isPinchZoomActive = true
                 pinchBaselineScrollOffsetPx = gridScrollOffsetPx
                 pinchBaselineLayoutGridHeightPx = pinchScrollOps.layoutGridHeightForHourHeight(hourHeightPx)
-                pinchBaselineFocalY = focalYInViewportPx.coerceIn(0f, gridViewportHeightPx)
+                pinchBaselineFocalY = focalYInViewportPx(
+                    focalYInContentPx = focalYInContentPx,
+                    scrollOffsetPx = gridScrollOffsetPx,
+                    viewportGridHeightPx = gridViewportHeightPx,
+                )
             }
         }
         val onPinchStep = remember(pinchScrollOps, density, style.hoursCount) {

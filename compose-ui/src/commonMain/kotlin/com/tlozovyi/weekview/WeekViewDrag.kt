@@ -18,6 +18,7 @@
 
 package com.tlozovyi.weekview
 
+import kotlin.math.roundToInt
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -81,6 +82,8 @@ internal fun eventTimesForDraggedStart(
 /**
  * Maps a touch point in grid-canvas coordinates to a date/time.
  *
+ * [touchY] is already in content space (see [gridContentYForHitTest]).
+ *
  * Ported from [com.alamkanak.weekview.WeekViewTouchHandler.calculateTimeFromPoint].
  */
 internal fun calculateTimeFromPoint(
@@ -89,10 +92,9 @@ internal fun calculateTimeFromPoint(
     layout: WeekViewLayout,
     style: WeekViewStyle,
     horizontalTranslationPx: Float,
-    gridScrollOffsetPx: Float = 0f,
 ): LocalDateTime? {
     val contentX = touchX - horizontalTranslationPx
-    val contentY = touchY + gridScrollOffsetPx
+    val contentY = touchY
 
     layout.renderDates.forEachIndexed { dateIndex, date ->
         val dayStartX = layout.dayStartX(dateIndex)
@@ -127,7 +129,7 @@ internal fun detectDragScrollEdge(
     gridViewportHeightPx: Float,
     scrollThresholdPx: Float = DRAG_SCROLL_THRESHOLD_PX,
 ): DragScrollEdge {
-    val viewportRelativeY = touchYInCanvasPx - gridScrollOffsetPx
+    val viewportRelativeY = touchYInCanvasPx - gridScrollOffsetPx.roundToInt()
 
     return when {
         viewportRelativeY < scrollThresholdPx -> DragScrollEdge.Top
