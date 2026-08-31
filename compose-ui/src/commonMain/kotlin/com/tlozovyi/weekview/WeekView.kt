@@ -229,6 +229,7 @@ fun WeekView(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
+            .consumeSystemBackGestureTouches()
             .background(style.backgroundColor),
     ) {
         val configuredMinHourHeightPx = with(density) { style.minHourHeightDp.toPx() }
@@ -491,15 +492,11 @@ fun WeekView(
         }
 
         val onPinchStart = remember(pinchScrollOps, gridViewportHeightPx) {
-            { focalYInContentPx: Float ->
+            { focalYInViewportPx: Float ->
                 isPinchZoomActive = true
                 pinchBaselineScrollOffsetPx = gridScrollOffsetPx
                 pinchBaselineLayoutGridHeightPx = pinchScrollOps.layoutGridHeightForHourHeight(hourHeightPx)
-                pinchBaselineFocalY = focalYInViewportPx(
-                    focalYInContentPx = focalYInContentPx,
-                    scrollOffsetPx = gridScrollOffsetPx,
-                    viewportGridHeightPx = gridViewportHeightPx,
-                )
+                pinchBaselineFocalY = focalYInViewportPx.coerceIn(0f, gridViewportHeightPx)
             }
         }
         val onPinchStep = remember(pinchScrollOps, density, style.hoursCount) {

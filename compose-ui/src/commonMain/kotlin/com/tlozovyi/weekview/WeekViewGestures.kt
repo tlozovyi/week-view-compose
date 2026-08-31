@@ -19,6 +19,7 @@ package com.tlozovyi.weekview
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEvent
@@ -326,8 +327,11 @@ internal fun Modifier.weekViewTimedEventGestures(
                         return@withTimeoutOrNull false
                     }
                     val change = event.changes.firstOrNull { it.id == pointerId } ?: return@withTimeoutOrNull false
-                    if (!change.pressed) {
+                    if (change.changedToUp()) {
                         return@withTimeoutOrNull true
+                    }
+                    if (!change.pressed) {
+                        return@withTimeoutOrNull false
                     }
                     if (change.positionChange().getDistance() > touchSlop) {
                         return@withTimeoutOrNull false

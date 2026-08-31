@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0-rc7
+
+Fixes spurious taps and horizontal scrolls when the system back gesture is used.
+
+### Fixed
+
+- **System back gesture** — touches starting in the OS system-gesture inset (`WindowInsets.systemGestures`) are consumed before [WeekView] scroll/tap handlers run, matching legacy View `WeekView` behavior where the framework cancels the stream.
+- **Predictive back (Android)** — while a predictive back gesture is in progress, pointer input is consumed so horizontal paging and grid taps do not fire when the gesture is cancelled or completed.
+- **Grid tap on cancelled pointers** — timed-event tap detection uses `changedToUp()` instead of treating any pointer release as a tap, so cancelled gestures (including back) no longer trigger `onEventClick` / `onEmptyViewClick`.
+
 ## 1.0.0-rc6
 
 Grid tap location detection after pinch-to-zoom and vertical scroll.

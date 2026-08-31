@@ -32,6 +32,7 @@ kotlin {
             implementation(compose.ui)
         }
         androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
             implementation(compose.preview)
         }
         commonTest.dependencies {

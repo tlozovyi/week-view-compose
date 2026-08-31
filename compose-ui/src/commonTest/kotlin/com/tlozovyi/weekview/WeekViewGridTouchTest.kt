@@ -31,6 +31,37 @@ import kotlinx.datetime.atTime
 class WeekViewGridTouchTest {
 
     @Test
+    fun isTouchInSystemGestureEdge_respectsLayoutDirection() {
+        assertTrue(
+            isTouchInSystemGestureEdge(
+                touchX = 10f,
+                layoutWidthPx = 400f,
+                leftGestureInsetPx = 24f,
+                rightGestureInsetPx = 24f,
+                isRtl = false,
+            ),
+        )
+        assertFalse(
+            isTouchInSystemGestureEdge(
+                touchX = 100f,
+                layoutWidthPx = 400f,
+                leftGestureInsetPx = 24f,
+                rightGestureInsetPx = 24f,
+                isRtl = false,
+            ),
+        )
+        assertTrue(
+            isTouchInSystemGestureEdge(
+                touchX = 390f,
+                layoutWidthPx = 400f,
+                leftGestureInsetPx = 24f,
+                rightGestureInsetPx = 24f,
+                isRtl = true,
+            ),
+        )
+    }
+
+    @Test
     fun shouldCancelGridTapWait_whenSecondPointerIsDownOrTapBlocked() {
         assertTrue(shouldCancelGridTapWait(pressedPointerCount = 2, tapBlocked = false))
         assertTrue(shouldCancelGridTapWait(pressedPointerCount = 1, tapBlocked = true))
