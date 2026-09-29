@@ -47,7 +47,16 @@ class WeekViewHorizontalScrollSnapTest {
 
     @Test
     fun horizontalSnapThresholdDaysIsLowerThanHalfPageForSevenDays() {
-        assertEquals(2, horizontalSnapThresholdDays(numberOfVisibleDays = 7))
+        assertEquals(1, horizontalSnapThresholdDays(numberOfVisibleDays = 7))
+    }
+
+    @Test
+    fun dayShiftFromReferenceScreenXIsSymmetricAroundZeroOffset() {
+        val dayWidth = 100f
+        assertEquals(0, dayShiftFromReferenceScreenX(referenceScreenX = -50f, dayWidthPx = dayWidth))
+        assertEquals(0, dayShiftFromReferenceScreenX(referenceScreenX = 50f, dayWidthPx = dayWidth))
+        assertEquals(1, dayShiftFromReferenceScreenX(referenceScreenX = -100f, dayWidthPx = dayWidth))
+        assertEquals(-1, dayShiftFromReferenceScreenX(referenceScreenX = 100f, dayWidthPx = dayWidth))
     }
 
     @Test
@@ -66,7 +75,7 @@ class WeekViewHorizontalScrollSnapTest {
     fun snapToVisibleDaysPageKeepsCurrentPageAfterSmallFutureScroll() {
         val target = snapToVisibleDaysPage(
             gesturePageStart = LocalDate(2026, 8, 17),
-            anchorDate = LocalDate(2026, 8, 19),
+            anchorDate = LocalDate(2026, 8, 18),
             scrollOffsetPx = -50f,
             dayWidthPx = 100f,
             numberOfVisibleDays = 7,
@@ -78,10 +87,10 @@ class WeekViewHorizontalScrollSnapTest {
     }
 
     @Test
-    fun snapToVisibleDaysPageAdvancesToNextWeekAfterThreeDayFutureScroll() {
+    fun snapToVisibleDaysPageAdvancesToNextWeekAfterTwoDayFutureScroll() {
         val target = snapToVisibleDaysPage(
             gesturePageStart = LocalDate(2026, 8, 17),
-            anchorDate = LocalDate(2026, 8, 20),
+            anchorDate = LocalDate(2026, 8, 19),
             scrollOffsetPx = 0f,
             dayWidthPx = 100f,
             numberOfVisibleDays = 7,
@@ -111,7 +120,7 @@ class WeekViewHorizontalScrollSnapTest {
     fun snapHorizontalScrollTargetUsesVisibleDaysPageSnap() {
         val target = snapHorizontalScrollTarget(
             gesturePageStart = LocalDate(2026, 8, 17),
-            anchorDate = LocalDate(2026, 8, 19),
+            anchorDate = LocalDate(2026, 8, 18),
             scrollOffsetPx = -50f,
             dayWidthPx = 100f,
             numberOfVisibleDays = 7,

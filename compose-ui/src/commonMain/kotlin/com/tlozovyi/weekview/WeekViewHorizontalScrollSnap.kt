@@ -87,6 +87,20 @@ internal fun referenceColumnScreenX(
     return dayDelta * dayWidthPx + scrollOffsetPx
 }
 
+/**
+ * Whole-day shift of [referenceDate]'s screen X (see [referenceColumnScreenX]).
+ * Truncates toward zero so forward vs backward scroll need the same distance before a day counts.
+ */
+internal fun dayShiftFromReferenceScreenX(
+    referenceScreenX: Float,
+    dayWidthPx: Float,
+): Int {
+    if (dayWidthPx <= 0f) {
+        return 0
+    }
+    return (-referenceScreenX / dayWidthPx).toInt()
+}
+
 /** Scroll-origin date relative to [gesturePageStart] (View library's `currentDate`). */
 internal fun horizontalScrollLeadingDate(
     gesturePageStart: LocalDate,
@@ -105,7 +119,7 @@ internal fun horizontalScrollLeadingDate(
         dayWidthPx = dayWidthPx,
         isLtr = isLtr,
     )
-    val dayShift = kotlin.math.floor(-referenceScreenX / dayWidthPx + 1e-4f).toInt()
+    val dayShift = dayShiftFromReferenceScreenX(referenceScreenX, dayWidthPx)
     return dateAtColumnOffset(gesturePageStart, dayShift, isLtr)
 }
 
@@ -134,7 +148,7 @@ internal fun currentPageStartDate(
         dayWidthPx = dayWidthPx,
         isLtr = isLtr,
     )
-    val daysFromOrigin = kotlin.math.floor(-screenX / dayWidthPx + 1e-4f).toInt()
+    val daysFromOrigin = dayShiftFromReferenceScreenX(screenX, dayWidthPx)
     val pageIndex = if (daysFromOrigin >= 0) {
         daysFromOrigin / numberOfVisibleDays
     } else {
@@ -143,9 +157,12 @@ internal fun currentPageStartDate(
     return dateAtColumnOffset(origin, pageIndex * numberOfVisibleDays, isLtr)
 }
 
-/** Lower threshold than half-page rounding so paging feels closer to the View library. */
+/**
+ * Day-count slack before page snap (see [snapToVisibleDaysPage]).
+ * Lower than half-page so paging triggers after a shorter drag; symmetric for both directions.
+ */
 internal fun horizontalSnapThresholdDays(numberOfVisibleDays: Int): Int {
-    return ((numberOfVisibleDays / 2) - 1).coerceAtLeast(0)
+    return ((numberOfVisibleDays / 2) - 2).coerceAtLeast(0)
 }
 
 internal fun pageTargetForLeadingDate(
