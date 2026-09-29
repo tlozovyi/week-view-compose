@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0-rc8
+
+Fixes spurious long-press and drag after scrolling without lifting the finger.
+
+### Fixed
+
+- **Long-press after scroll** — grid tap/long-press detection cancels when the pointer moves beyond touch slop using cumulative displacement from the initial down (not per-frame `positionChange()`, which scroll consumers zero out), and when vertical or horizontal grid scroll offset changes during the wait. Prevents `onEmptyViewLongClick`, `onEventLongClick`, and default drag-from-long-press from firing after a vertical or horizontal scroll while the finger is still down.
+
 ## 1.0.0-rc7
 
 Fixes spurious taps and horizontal scrolls when the system back gesture is used.

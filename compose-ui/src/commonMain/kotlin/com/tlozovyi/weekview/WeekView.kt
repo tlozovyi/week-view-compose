@@ -652,6 +652,7 @@ fun WeekView(
                         onDragStateChange = { dragState = it },
                         onDragScrollEdgeChange = { dragScrollEdge = it },
                         gridScrollOffsetPxProvider = { gridScrollOffsetPx },
+                        horizontalScrollOffsetPxProvider = { horizontalScrollOffsetPx },
                         gridViewportWidthPx = derivedLayouts.layout.viewportGridWidthPx,
                         gridViewportHeightPx = gridViewportHeightPx,
                         onEventDrop = onEventDrop,

@@ -62,6 +62,45 @@ internal fun shouldCancelGridTapWait(
     tapBlocked: Boolean,
 ): Boolean = pressedPointerCount >= 2 || tapBlocked
 
+internal const val GRID_TAP_SCROLL_OFFSET_EPSILON_PX = 0.5f
+
+internal fun hasGridPointerMovedBeyondTapSlop(
+    downPosition: Offset,
+    currentPosition: Offset,
+    touchSlop: Float,
+): Boolean = (currentPosition - downPosition).getDistance() > touchSlop
+
+internal fun hasGridScrollOffsetChangedForTapWait(
+    initialOffsetPx: Float,
+    currentOffsetPx: Float,
+): Boolean = abs(currentOffsetPx - initialOffsetPx) > GRID_TAP_SCROLL_OFFSET_EPSILON_PX
+
+internal fun shouldCancelGridLongPressWait(
+    downPosition: Offset,
+    currentPosition: Offset,
+    touchSlop: Float,
+    pressedPointerCount: Int,
+    tapBlocked: Boolean,
+    initialGridScrollOffsetPx: Float,
+    currentGridScrollOffsetPx: Float,
+    initialHorizontalScrollOffsetPx: Float,
+    currentHorizontalScrollOffsetPx: Float,
+): Boolean {
+    if (shouldCancelGridTapWait(pressedPointerCount, tapBlocked)) {
+        return true
+    }
+    if (hasGridPointerMovedBeyondTapSlop(downPosition, currentPosition, touchSlop)) {
+        return true
+    }
+    if (hasGridScrollOffsetChangedForTapWait(initialGridScrollOffsetPx, currentGridScrollOffsetPx)) {
+        return true
+    }
+    if (hasGridScrollOffsetChangedForTapWait(initialHorizontalScrollOffsetPx, currentHorizontalScrollOffsetPx)) {
+        return true
+    }
+    return false
+}
+
 internal fun Modifier.weekViewPinchZoom(
     enabled: Boolean,
     gestureScope: WeekViewGestureScope,
@@ -315,17 +354,12 @@ internal fun Modifier.weekViewTimedEventGestures(
             val touchSlop = viewConfiguration.touchSlop
             val longPressTimeoutMillis = viewConfiguration.longPressTimeoutMillis
             val layout = gestureScope.displayGridLayout ?: return@awaitEachGesture
+            val initialGridScrollOffsetPx = gestureScope.gridScrollOffsetPx
+            val initialHorizontalScrollOffsetPx = gestureScope.horizontalScrollOffsetPx
 
             val releasedBeforeLongPress = withTimeoutOrNull(longPressTimeoutMillis) {
                 while (true) {
                     val event = awaitPointerEvent(PointerEventPass.Main)
-                    if (shouldCancelGridTapWait(
-                            pressedPointerCount = event.changes.count { it.pressed },
-                            tapBlocked = gestureScope.isTapBlocked(),
-                        )
-                    ) {
-                        return@withTimeoutOrNull false
-                    }
                     val change = event.changes.firstOrNull { it.id == pointerId } ?: return@withTimeoutOrNull false
                     if (change.changedToUp()) {
                         return@withTimeoutOrNull true
@@ -333,7 +367,18 @@ internal fun Modifier.weekViewTimedEventGestures(
                     if (!change.pressed) {
                         return@withTimeoutOrNull false
                     }
-                    if (change.positionChange().getDistance() > touchSlop) {
+                    if (shouldCancelGridLongPressWait(
+                            downPosition = down.position,
+                            currentPosition = change.position,
+                            touchSlop = touchSlop,
+                            pressedPointerCount = event.changes.count { it.pressed },
+                            tapBlocked = gestureScope.isTapBlocked(),
+                            initialGridScrollOffsetPx = initialGridScrollOffsetPx,
+                            currentGridScrollOffsetPx = gestureScope.gridScrollOffsetPx,
+                            initialHorizontalScrollOffsetPx = initialHorizontalScrollOffsetPx,
+                            currentHorizontalScrollOffsetPx = gestureScope.horizontalScrollOffsetPx,
+                        )
+                    ) {
                         return@withTimeoutOrNull false
                     }
                 }

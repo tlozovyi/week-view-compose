@@ -2,7 +2,7 @@
 
 Comparison between [tlozovyi/Android-Week-View](https://github.com/tlozovyi/Android-Week-View) (View/XML) and this Compose library.
 
-Last updated for **1.0.0-rc6**.
+Last updated for **1.0.0-rc8**.
 
 ## Feature matrix
 
@@ -37,6 +37,7 @@ Last updated for **1.0.0-rc6**.
 - **Paging:** Compose uses **`WeekViewPagingState`** instead of subclassing **`PagingAdapter`**. Use **`onLoadMore(start, end, submit)`** for async loads, or the suspend overload that returns `List<WeekViewEvent>`. Call **`submit`** from the callback (or let the suspend overload submit for you). **`onRangeChanged`** mirrors View **`Adapter.onRangeChanged`**. Async **`submit`** publishes into **`eventsState`** (1.0.0-rc4+).
 - **Pinch zoom persistence:** **`onHourHeightChanged`** reports canonical **`Dp`** matching layout snapping; echo back into **`WeekViewStyle.hourHeightDp`** without jumps (1.0.0-rc3+).
 - **Grid hit-testing:** Timed grid taps use canvas content coordinates; vertical scroll is applied by layout placement, not added again in hit-test math (1.0.0-rc6). Chip bounds use the same Dp-snapped grid layout as drawing (`resolveDisplayGridLayout`).
+- **Grid long-press vs scroll:** Long-press wait is cancelled when scroll offset changes or cumulative pointer movement exceeds touch slop, so scroll-then-hold without lifting does not trigger long-press or drag (1.0.0-rc8+).
 - **Per-event typography:** **`WeekViewEventTextStyle`** on **`WeekViewEvent`** (`titleTextStyle` / `subtitleTextStyle`) — combinable bold, italic, underline, strikethrough (1.0.0-rc5+).
 - **Fonts:** Compose uses `FontFamily` on `WeekViewStyle` instead of XML `fontFamily` / `typeface` / `textStyle` attrs. Header labels use `headerFontWeight` (default medium) when a family is set.
 - **Week number:** ISO-8601 week of the first visible date; shown when `showWeekNumber = true` and `numberOfVisibleDays > 1`.

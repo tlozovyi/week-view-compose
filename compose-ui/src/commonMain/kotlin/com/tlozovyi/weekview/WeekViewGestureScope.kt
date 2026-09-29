@@ -35,6 +35,7 @@ internal class WeekViewGestureScope {
     var horizontalTranslationPx: Float = 0f
     var displayGridLayout: WeekViewLayout? = null
     var gridScrollOffsetPx: Float = 0f
+    var horizontalScrollOffsetPx: Float = 0f
     var style: WeekViewStyle = WeekViewStyle.Default
     var tapEnabled: Boolean = false
     var longPressEnabled: Boolean = false

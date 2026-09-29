@@ -69,6 +69,64 @@ class WeekViewGridTouchTest {
     }
 
     @Test
+    fun shouldCancelGridLongPressWait_whenPointerMovedBeyondSlopOrScrollChanged() {
+        val down = Offset(100f, 200f)
+        val touchSlop = 8f
+        assertFalse(
+            shouldCancelGridLongPressWait(
+                downPosition = down,
+                currentPosition = down + Offset(5f, 0f),
+                touchSlop = touchSlop,
+                pressedPointerCount = 1,
+                tapBlocked = false,
+                initialGridScrollOffsetPx = 0f,
+                currentGridScrollOffsetPx = 0f,
+                initialHorizontalScrollOffsetPx = 0f,
+                currentHorizontalScrollOffsetPx = 0f,
+            ),
+        )
+        assertTrue(
+            shouldCancelGridLongPressWait(
+                downPosition = down,
+                currentPosition = down + Offset(touchSlop + 1f, 0f),
+                touchSlop = touchSlop,
+                pressedPointerCount = 1,
+                tapBlocked = false,
+                initialGridScrollOffsetPx = 0f,
+                currentGridScrollOffsetPx = 0f,
+                initialHorizontalScrollOffsetPx = 0f,
+                currentHorizontalScrollOffsetPx = 0f,
+            ),
+        )
+        assertTrue(
+            shouldCancelGridLongPressWait(
+                downPosition = down,
+                currentPosition = down,
+                touchSlop = touchSlop,
+                pressedPointerCount = 1,
+                tapBlocked = false,
+                initialGridScrollOffsetPx = 0f,
+                currentGridScrollOffsetPx = 40f,
+                initialHorizontalScrollOffsetPx = 0f,
+                currentHorizontalScrollOffsetPx = 0f,
+            ),
+        )
+        assertTrue(
+            shouldCancelGridLongPressWait(
+                downPosition = down,
+                currentPosition = down,
+                touchSlop = touchSlop,
+                pressedPointerCount = 1,
+                tapBlocked = false,
+                initialGridScrollOffsetPx = 0f,
+                currentGridScrollOffsetPx = 0f,
+                initialHorizontalScrollOffsetPx = 10f,
+                currentHorizontalScrollOffsetPx = 25f,
+            ),
+        )
+    }
+
+    @Test
     fun findEventAtIgnoresBlockedTimeChips() {
         val date = LocalDate(2026, 8, 20)
         val blockedChip = blockedTimeChip(

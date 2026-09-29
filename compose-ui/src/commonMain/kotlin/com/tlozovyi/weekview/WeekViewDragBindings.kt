@@ -114,6 +114,7 @@ internal fun WeekViewGestureScope.bindEventDragGestures(
     onDragStateChange: (WeekViewDragState?) -> Unit,
     onDragScrollEdgeChange: (DragScrollEdge) -> Unit,
     gridScrollOffsetPxProvider: () -> Float,
+    horizontalScrollOffsetPxProvider: () -> Float,
     gridViewportWidthPx: Float,
     gridViewportHeightPx: Float,
     onEventDrop: ((WeekViewEvent, kotlinx.datetime.LocalDateTime, kotlinx.datetime.LocalDateTime) -> Unit)?,
@@ -122,6 +123,7 @@ internal fun WeekViewGestureScope.bindEventDragGestures(
     horizontalTranslationPx = horizontalTranslationPxProvider()
     displayGridLayout = displayGridLayoutProvider()
     gridScrollOffsetPx = gridScrollOffsetPxProvider()
+    horizontalScrollOffsetPx = horizontalScrollOffsetPxProvider()
     style = styleProvider()
     this.tapEnabled = tapEnabled
     this.longPressEnabled = longPressEnabled
