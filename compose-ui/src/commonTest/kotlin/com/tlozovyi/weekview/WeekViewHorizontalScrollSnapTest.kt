@@ -18,6 +18,8 @@ package com.tlozovyi.weekview
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 
@@ -46,8 +48,25 @@ class WeekViewHorizontalScrollSnapTest {
     }
 
     @Test
-    fun horizontalSnapThresholdDaysIsLowerThanHalfPageForSevenDays() {
-        assertEquals(1, horizontalSnapThresholdDays(numberOfVisibleDays = 7))
+    fun horizontalPageSnapThresholdPxUsesFractionOfPageWidth() {
+        val dayWidth = 100f
+        val pageWidth = horizontalPageWidthPx(dayWidth, numberOfVisibleDays = 7)
+        assertEquals(
+            pageWidth * HORIZONTAL_PAGE_SNAP_THRESHOLD_FRACTION,
+            horizontalPageSnapThresholdPx(pageWidth),
+        )
+        assertTrue(
+            shouldSnapToAdjacentHorizontalPage(
+                gesturePageReferenceScreenX = -200f,
+                pageWidthPx = pageWidth,
+            ),
+        )
+        assertFalse(
+            shouldSnapToAdjacentHorizontalPage(
+                gesturePageReferenceScreenX = -150f,
+                pageWidthPx = pageWidth,
+            ),
+        )
     }
 
     @Test

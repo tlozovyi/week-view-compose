@@ -157,12 +157,27 @@ internal fun currentPageStartDate(
     return dateAtColumnOffset(origin, pageIndex * numberOfVisibleDays, isLtr)
 }
 
-/**
- * Day-count slack before page snap (see [snapToVisibleDaysPage]).
- * Lower than half-page so paging triggers after a shorter drag; symmetric for both directions.
- */
-internal fun horizontalSnapThresholdDays(numberOfVisibleDays: Int): Int {
-    return ((numberOfVisibleDays / 2) - 2).coerceAtLeast(0)
+/** Visible horizontal page width in pixels (one snap “range”). */
+internal fun horizontalPageWidthPx(
+    dayWidthPx: Float,
+    numberOfVisibleDays: Int,
+): Float = dayWidthPx * numberOfVisibleDays
+
+/** Portion of [horizontalPageWidthPx] dragged before release snaps to the adjacent page (22%). */
+internal const val HORIZONTAL_PAGE_SNAP_THRESHOLD_FRACTION = 0.22f
+
+internal fun horizontalPageSnapThresholdPx(pageWidthPx: Float): Float {
+    if (pageWidthPx <= 0f) {
+        return Float.MAX_VALUE
+    }
+    return pageWidthPx * HORIZONTAL_PAGE_SNAP_THRESHOLD_FRACTION
+}
+
+internal fun shouldSnapToAdjacentHorizontalPage(
+    gesturePageReferenceScreenX: Float,
+    pageWidthPx: Float,
+): Boolean {
+    return abs(gesturePageReferenceScreenX) > horizontalPageSnapThresholdPx(pageWidthPx)
 }
 
 internal fun pageTargetForLeadingDate(
@@ -234,16 +249,30 @@ internal fun snapToVisibleDaysPage(
     if (dayWidthPx <= 0f || numberOfVisibleDays <= 0) {
         return HorizontalScrollSnapTarget(anchorDate, scrollOffsetPx)
     }
-    val leadingDate = horizontalScrollLeadingDate(
-        gesturePageStart = gesturePageStart,
+    val gesturePageReferenceScreenX = referenceColumnScreenX(
         anchorDate = anchorDate,
         scrollOffsetPx = scrollOffsetPx,
+        referenceDate = gesturePageStart,
         dayWidthPx = dayWidthPx,
         isLtr = isLtr,
     )
-    val daysScrolled = abs(leadingDate.toEpochDays() - gesturePageStart.toEpochDays())
-    val threshold = horizontalSnapThresholdDays(numberOfVisibleDays)
-    val targetDate = if (daysScrolled > threshold) {
+    val pageWidthPx = horizontalPageWidthPx(dayWidthPx, numberOfVisibleDays)
+    val targetDate = if (
+        shouldSnapToAdjacentHorizontalPage(
+            gesturePageReferenceScreenX = gesturePageReferenceScreenX,
+            pageWidthPx = pageWidthPx,
+        )
+    ) {
+        val scrolledTowardFuture = if (isLtr) {
+            gesturePageReferenceScreenX < 0f
+        } else {
+            gesturePageReferenceScreenX > 0f
+        }
+        val leadingDate = if (scrolledTowardFuture) {
+            dateAtColumnOffset(gesturePageStart, 1, isLtr)
+        } else {
+            dateAtColumnOffset(gesturePageStart, -1, isLtr)
+        }
         pageTargetForLeadingDate(
             gesturePageStart = gesturePageStart,
             leadingDate = leadingDate,

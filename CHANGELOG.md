@@ -2,11 +2,12 @@
 
 ## 1.0.0-rc8
 
-Fixes spurious long-press and drag after scrolling without lifting the finger.
+Gesture fixes for grid scroll and horizontal paging.
 
 ### Fixed
 
-- **Long-press after scroll** — grid tap/long-press detection cancels when the pointer moves beyond touch slop using cumulative displacement from the initial down (not per-frame `positionChange()`, which scroll consumers zero out), and when vertical or horizontal grid scroll offset changes during the wait. Prevents `onEmptyViewLongClick`, `onEventLongClick`, and default drag-from-long-press from firing after a vertical or horizontal scroll while the finger is still down.
+- **Long-press after scroll** — long-press and drag no longer fire when the user scrolls the grid and keeps their finger down without lifting.
+- **Horizontal page snap** — paging to the next or previous range is easier and consistent in both directions; snap uses a short drag threshold relative to the visible page width.
 
 ## 1.0.0-rc7
 
